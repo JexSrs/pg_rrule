@@ -1,5 +1,5 @@
 # pg_rrule
-PostgreSQL extension for working with iCalendar Recurrence Rules (RRULE)
+PostgreSQL extension for working with iCalendar Recurrence Rules (RRULE).
 
 This project is a fork from [pg_rrule](https://github.com/petropavel13/pg_rrule) which is no longer maintained.
 
@@ -78,10 +78,12 @@ and install it:
 ```sql
 CREATE EXTENSION pg_rrule;
 ```
-
-
-
-[Include installation instructions here]
+If the extension is already installed and need to be updated:
+```sql
+ALTER EXTENSION pg_rrule UPDATE;
+# or
+ALTER EXTENSION pg_rrule UPDATE TO '0.3.0';
+```
 
 ## Functions
 
