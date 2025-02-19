@@ -24,9 +24,21 @@ set(LIBICAL_INCLUDE_DIRS
 # Use the static library
 set(LIBICAL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/libical/build/lib/libical.a")
 
-# Find static ICU libraries explicitly
-set(ICU_UC_STATIC_LIBRARY "/usr/local/lib/libicuuc.a")
-if (NOT ICU_UC_STATIC_LIBRARY)
+# Determine architecture-specific library path
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    set(ARCH_LIB_PATH "/usr/lib/aarch64-linux-gnu")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    set(ARCH_LIB_PATH "/usr/lib/x86_64-linux-gnu")
+else()
+    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
+# Set ICU library paths using the architecture-specific path
+set(ICU_UC_STATIC_LIBRARY "${ARCH_LIB_PATH}/libicuuc.a")
+set(ICU_I18N_STATIC_LIBRARY "${ARCH_LIB_PATH}/libicui18n.a")
+set(ICU_DATA_STATIC_LIBRARY "${ARCH_LIB_PATH}/libicudata.a")
+
+if (NOT ICU_UC_STATIC_LIBRARY OR NOT ICU_I18N_STATIC_LIBRARY OR NOT ICU_DATA_STATIC_LIBRARY)
     message(FATAL_ERROR "Could not find static ICU libraries")
 endif ()
 
