@@ -25,11 +25,8 @@ set(LIBICAL_INCLUDE_DIRS
 set(LIBICAL_LIBRARY "${CMAKE_CURRENT_SOURCE_DIR}/libical/build/lib/libical.a")
 
 # Find static ICU libraries explicitly
-find_library(ICU_UC_STATIC_LIBRARY libicuuc.a)
-find_library(ICU_I18N_STATIC_LIBRARY libicui18n.a)
-find_library(ICU_DATA_STATIC_LIBRARY libicudata.a)
-
-if (NOT ICU_UC_STATIC_LIBRARY OR NOT ICU_I18N_STATIC_LIBRARY OR NOT ICU_DATA_STATIC_LIBRARY)
+set(ICU_UC_STATIC_LIBRARY "/usr/local/lib/libicuuc.a")
+if (NOT ICU_UC_STATIC_LIBRARY)
     message(FATAL_ERROR "Could not find static ICU libraries")
 endif ()
 

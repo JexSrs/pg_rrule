@@ -31,14 +31,16 @@ Build `libical`:
 cd /app/libical
 mkdir build
 cd build
-cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DICAL_GLIB=OFF \
-    -DICAL_BUILD_DOCS=OFF \
-    -DLIBICAL_BUILD_TESTING=OFF \
+cmake \
+    -DSTATIC_ONLY=True \
+    -DGOBJECT_INTROSPECTION=False \
+    -DCMAKE_DISABLE_FIND_PACKAGE_ICU=True \
+    -DLIBICAL_BUILD_TESTING=False \
+    -DICAL_BUILD_DOCS=False \
+    -DICAL_GLIB=False \
     -DCMAKE_CXX_FLAGS="-fPIC" \
     -DCMAKE_C_FLAGS="-fPIC" \
-    -DCMAKE_EXE_LINKER_FLAGS="-lm -lstdc++" \
+    -DICU_ROOT=/usr/local \
     ..
 make
 ```
