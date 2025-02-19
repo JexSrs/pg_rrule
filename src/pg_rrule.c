@@ -529,6 +529,14 @@ void pg_rrule_rrule_to_time_t_array_until(struct icalrecurrencetype recurrence,
                                           unsigned int* const out_count) {
 
     icalrecur_iterator* const recur_iterator = icalrecur_iterator_new(recurrence, dtstart);
+    if (recur_iterator == NULL) {
+        const icalerrorenum err = icalerrno;
+        icalerror_clear_errno();
+
+        ereport(ERROR,
+                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+                 errmsg("iCal error: %s.", icalerror_strerror(err))));
+    }
 
     icalarray* const icaltimes_list = icalarray_new(sizeof(icaltimetype), 32);
 
