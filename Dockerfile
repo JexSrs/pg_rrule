@@ -25,16 +25,6 @@ RUN apt-get update && apt-get install -y \
     postgresql-server-dev-17 \
     && rm -rf /var/lib/apt/lists/*
 
-# Download corrct ICU version
-RUN curl -LO https://github.com/unicode-org/icu/releases/download/release-70-1/icu4c-70_1-src.tgz && \
-        tar xf icu4c-70_1-src.tgz && \
-        cd icu/source && \
-        CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --enable-static --disable-shared --prefix=/usr/local && \
-        make -j$(nproc) && \
-        make install && \
-        cd /tmp && \
-        rm -rf icu icu4c-70_1-src.tgz
-
 WORKDIR /app
 
 CMD ["/bin/bash"]
