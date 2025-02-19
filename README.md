@@ -78,10 +78,10 @@ and install it:
 ```sql
 CREATE EXTENSION pg_rrule;
 ```
-If the extension is already installed and need to be updated:
+If the extension is already installed and needs to be updated:
 ```sql
 ALTER EXTENSION pg_rrule UPDATE;
-# or
+-- or for specific version 
 ALTER EXTENSION pg_rrule UPDATE TO '0.3.0';
 ```
 
