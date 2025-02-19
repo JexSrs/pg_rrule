@@ -42,7 +42,7 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS) {
     }
 
     // Below is a critical assert, to make sure the size of icalrecurrencetype in the current version of libical
-    // matches the size of the custom RRULE type defined in pg_rrule/sql/pg_rrule.sql.in
+    // matches the size of the custom RRULE type defined in pg_rrule/sql/pg_rrule.sql
     //
     // CREATE TYPE rrule (
     //    input = rrule_in,
