@@ -1,15 +1,4 @@
-/*
- * Author: petropavel
- * Created at: 2014-09-14 23:36:11 +0600
- *
- */
-
---
--- This is a example code genereted automaticaly
--- by pgxn-utils.
-
 SET client_min_messages = warning;
-
 
 CREATE TYPE rrule;
 
@@ -26,7 +15,7 @@ CREATE OR REPLACE FUNCTION rrule_out(rrule)
 CREATE TYPE rrule (
    input = rrule_in,
    output = rrule_out,
-   internallength = 2760 -- TODO: check sizeof(icalrecurrencetype) on 32-bit machine
+   internallength = 2896
 );
 
 

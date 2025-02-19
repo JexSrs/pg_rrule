@@ -32,9 +32,27 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS) {
                  errmsg("Invalid RRULE frequency. RRULE \"%s\".", rrule_str)));
     }
 
+    // Need to copy result to palloc'd memory
     struct icalrecurrencetype* recurrence_ref = palloc(sizeof(struct icalrecurrencetype));
+    memcpy(recurrence_ref, &recurrence, sizeof(struct icalrecurrencetype));
 
-    (*recurrence_ref) = recurrence;
+    // Be sure to copy the strings using the pstrdup function
+    if (recurrence.rscale) {
+        recurrence_ref->rscale = pstrdup(recurrence.rscale);
+    }
+
+    // Below is a critical assert, to make sure the size of icalrecurrencetype in the current version of libical
+    // matches the size of the custom RRULE type defined in pg_rrule/sql/pg_rrule.sql.in
+    //
+    // CREATE TYPE rrule (
+    //    input = rrule_in,
+    //    output = rrule_out,
+    //    internallength = 2896
+    // );
+    //
+    // If a new version of libical changes the size of icalrecurrencetype, we need to fail here
+    // so that we are aware of the change.
+    assert(sizeof(struct icalrecurrencetype)==2896);
 
     PG_RETURN_POINTER(recurrence_ref);
 }
@@ -53,7 +71,7 @@ Datum pg_rrule_out(PG_FUNCTION_ARGS) {
         ereport(ERROR,
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("Can't convert RRULE to string. iCal error: %s", icalerror_strerror(err)),
-                 errhint("Please create new issue here: https://github.com/petropavel13/pg_rrule/issues/new")));
+                 errhint("Please create new issue here: https://github.com/JexSrs/pg_rrule/issues/new")));
     }
 
     const size_t str_bytes = sizeof(char) * (strlen(rrule_str) + 1);
@@ -128,7 +146,7 @@ Datum pg_rrule_get_occurrences_dtstart(PG_FUNCTION_ARGS) {
 Datum pg_rrule_get_occurrences_dtstart_until(PG_FUNCTION_ARGS) {
     struct icalrecurrencetype* recurrence_ref = (struct icalrecurrencetype*)PG_GETARG_POINTER(0);
     Timestamp dtstart_ts = PG_GETARG_TIMESTAMP(1);
-    Timestamp until_ts = PG_GETARG_TIMESTAMPTZ(2);
+    Timestamp until_ts = PG_GETARG_TIMESTAMP(2);
 
     pg_time_t dtstart_ts_pg_time_t = timestamptz_to_time_t(dtstart_ts);
     pg_time_t until_ts_pg_time_t = timestamptz_to_time_t(until_ts);
