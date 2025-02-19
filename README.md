@@ -3,6 +3,11 @@ PostgreSQL extension for working with iCalendar Recurrence Rules (RRULE)
 
 ## Build
 
+Clone repository with submodules:
+```sh
+git clone --recurse-submodules https://github.com/JexSrs/pg_rrule.git
+```
+
 Start docker container which has all the dependencies installed:
 ```sh
 docker compose build && docker compose run cdev bash 
@@ -27,7 +32,7 @@ make
 
 Build `pg_rrule`:
 ```sh
-cd /app/pg_rrule
+cd /app
 mkdir build
 cd build
 cmake ..

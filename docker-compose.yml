@@ -3,5 +3,4 @@ services:
     container_name: cdev
     build: .
     volumes:
-      - ./libical:/app/libical
-      - ./:/app/pg_rrule
+      - ./:/app
