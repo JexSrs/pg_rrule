@@ -50,20 +50,17 @@ Datum pg_rrule_out(PG_FUNCTION_ARGS) {
     char *const rrule_str = icalrecurrencetype_as_string(recurrence_ref);
 
     const icalerrorenum err = icalerrno;
-
     if (err != ICAL_NO_ERROR) {
         icalerror_clear_errno();
-
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("Can't convert RRULE to string. iCal error: %s", icalerror_strerror(err)),
-                 errhint("Please create new issue here: https://github.com/JexSrs/pg_rrule/issues/new")));
+        if (rrule_str) free(rrule_str);
+        ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),errmsg("Can't convert RRULE to string. iCal error: %s", icalerror_strerror(err))));
     }
 
     const size_t str_bytes = sizeof(char) * (strlen(rrule_str) + 1);
-
     char *const rrule_str_copy = palloc(str_bytes);
+
     memcpy(rrule_str_copy, rrule_str, str_bytes);
+    free(rrule_str);
 
     PG_RETURN_CSTRING(rrule_str_copy);
 }
