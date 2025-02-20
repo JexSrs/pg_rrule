@@ -115,4 +115,6 @@ void pg_rrule_rrule_to_time_t_array_until(struct icalrecurrencetype recurrence,
                                           time_t** const out_array,
                                           unsigned int* const out_count);
 
+Datum pg_rrule_get_bypart_rrule(struct icalrecurrencetype *recurrence_ref, icalrecurrencetype_byrule part, size_t max_size);
+
 #endif // PG_RRULE_H

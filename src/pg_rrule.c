@@ -249,7 +249,6 @@ Datum pg_rrule_get_freq_rrule(PG_FUNCTION_ARGS) {
     PG_RETURN_TEXT_P(cstring_to_text(freq_string));
 }
 
-
 /* UNTIL */
 Datum pg_rrule_get_until_rrule(PG_FUNCTION_ARGS) {
     struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
@@ -263,7 +262,6 @@ Datum pg_rrule_get_until_rrule(PG_FUNCTION_ARGS) {
 
     PG_RETURN_TIMESTAMP(time_t_to_timestamptz(until_pg_time_t));
 }
-
 
 /* UNTIL TZ */
 Datum pg_rrule_get_untiltz_rrule(PG_FUNCTION_ARGS) {
@@ -290,13 +288,11 @@ Datum pg_rrule_get_untiltz_rrule(PG_FUNCTION_ARGS) {
     PG_RETURN_TIMESTAMP(time_t_to_timestamptz(until_pg_time_t));
 }
 
-
 /* COUNT */
 Datum pg_rrule_get_count_rrule(PG_FUNCTION_ARGS) {
     struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
     PG_RETURN_INT32(recurrence_ref->count);
 }
-
 
 /* INTERVAL */
 Datum pg_rrule_get_interval_rrule(PG_FUNCTION_ARGS) {
@@ -304,69 +300,18 @@ Datum pg_rrule_get_interval_rrule(PG_FUNCTION_ARGS) {
     PG_RETURN_INT16(recurrence_ref->interval);
 }
 
-
-
-Datum pg_rrule_get_bypart_rrule(struct icalrecurrencetype *recurrence_ref, icalrecurrencetype_byrule part, size_t max_size){
-    // Return empty array if the by-rule part doesn't exist
-    if (!recurrence_ref->by[part].data) {
-        Datum *empty_array = (Datum *)palloc(0);
-        int16 typlen;
-        bool typbyval;
-        char typalign;
-        get_typlenbyvalalign(INT2OID, &typlen, &typbyval, &typalign);
-        ArrayType *result = construct_array(empty_array, 0, INT2OID, typlen, typbyval, typalign);
-        PG_RETURN_ARRAYTYPE_P(result);
-    }
-
-    unsigned int cnt = 0;
-    for (;cnt < max_size && recurrence_ref->by[part].data[cnt] != 0; cnt++);
-
-    if (cnt == 0) {
-        Datum *zero_array = (Datum *)palloc(sizeof(Datum));
-        zero_array[0] = Int16GetDatum(0);
-        int16 typlen;
-        bool typbyval;
-        char typalign;
-        get_typlenbyvalalign(INT2OID, &typlen, &typbyval, &typalign);
-        ArrayType *result = construct_array(zero_array, 1, INT2OID, typlen, typbyval, typalign);
-        PG_RETURN_ARRAYTYPE_P(result);
-    }
-
-    Datum *datum_elems = (Datum *)palloc(sizeof(Datum) * cnt);
-
-    for (unsigned int i = 0; i < cnt; i++) {
-        datum_elems[i] = Int16GetDatum(recurrence_ref->by[part].data[i]);
-    }
-
-    int16 typlen;
-    bool typbyval;
-    char typalign;
-    get_typlenbyvalalign(INT2OID, &typlen, &typbyval, &typalign);
-
-    ArrayType *result_array = construct_array(
-        datum_elems,
-        cnt,
-        INT2OID,
-        typlen,
-        typbyval,
-        typalign
-    );
-
-    PG_RETURN_ARRAYTYPE_P(result_array);
-}
-
 /* BYSECOND */
 Datum pg_rrule_get_bysecond_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_SECOND, ICAL_BY_SECOND_SIZE);
 }
 
 /* BYMINUTE */
-Datum pg_rrule_get_byminute_rrule(PG_FUNCTION_ARGS){
+Datum pg_rrule_get_byminute_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_MINUTE, ICAL_BY_MINUTE_SIZE);
 }
@@ -374,7 +319,7 @@ Datum pg_rrule_get_byminute_rrule(PG_FUNCTION_ARGS){
 /* BYHOUR */
 Datum pg_rrule_get_byhour_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_HOUR, ICAL_BY_HOUR_SIZE);
 }
@@ -382,7 +327,7 @@ Datum pg_rrule_get_byhour_rrule(PG_FUNCTION_ARGS) {
 /* BYDAY */
 Datum pg_rrule_get_byday_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_DAY, ICAL_BY_DAY_SIZE);
 }
@@ -390,7 +335,7 @@ Datum pg_rrule_get_byday_rrule(PG_FUNCTION_ARGS) {
 /* BYMONTHDAY */
 Datum pg_rrule_get_bymonthday_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_MONTH_DAY, ICAL_BY_MONTHDAY_SIZE);
 }
@@ -398,7 +343,7 @@ Datum pg_rrule_get_bymonthday_rrule(PG_FUNCTION_ARGS) {
 /* BYYEARDAY */
 Datum pg_rrule_get_byyearday_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_YEAR_DAY, ICAL_BY_YEARDAY_SIZE);
 }
@@ -406,7 +351,7 @@ Datum pg_rrule_get_byyearday_rrule(PG_FUNCTION_ARGS) {
 /* BYWEEKNO */
 Datum pg_rrule_get_byweekno_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_WEEK_NO, ICAL_BY_WEEKNO_SIZE);
 }
@@ -414,7 +359,7 @@ Datum pg_rrule_get_byweekno_rrule(PG_FUNCTION_ARGS) {
 /* BYMONTH */
 Datum pg_rrule_get_bymonth_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_MONTH, ICAL_BY_MONTH_SIZE);
 }
@@ -422,7 +367,7 @@ Datum pg_rrule_get_bymonth_rrule(PG_FUNCTION_ARGS) {
 /* BYSETPOS */
 Datum pg_rrule_get_bysetpos_rrule(PG_FUNCTION_ARGS) {
     if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *)PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
 
     return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_SET_POS, ICAL_BY_SETPOS_SIZE);
 }
@@ -440,17 +385,11 @@ Datum pg_rrule_get_wkst_rrule(PG_FUNCTION_ARGS) {
     PG_RETURN_TEXT_P(cstring_to_text(wkst_string));
 }
 
-
-Datum pg_rrule_get_occurrences_rrule(struct icalrecurrencetype recurrence,
-                                     struct icaltimetype dtstart,
-                                     bool use_tz) {
+Datum pg_rrule_get_occurrences_rrule(struct icalrecurrencetype recurrence, struct icaltimetype dtstart, bool use_tz) {
     return pg_rrule_get_occurrences_rrule_until(recurrence, dtstart, icaltime_null_time(), use_tz);
 }
 
-Datum pg_rrule_get_occurrences_rrule_until(struct icalrecurrencetype recurrence,
-                                           struct icaltimetype dtstart,
-                                           struct icaltimetype until,
-                                           bool use_tz) {
+Datum pg_rrule_get_occurrences_rrule_until(struct icalrecurrencetype recurrence, struct icaltimetype dtstart, struct icaltimetype until, bool use_tz) {
     time_t *times_array = NULL;
     unsigned int cnt = 0;
 
@@ -492,19 +431,11 @@ Datum pg_rrule_get_occurrences_rrule_until(struct icalrecurrencetype recurrence,
     PG_RETURN_ARRAYTYPE_P(result_array);
 }
 
-
-void pg_rrule_rrule_to_time_t_array(struct icalrecurrencetype recurrence,
-                                    struct icaltimetype dtstart,
-                                    time_t **const out_array,
-                                    unsigned int *const out_count) {
+void pg_rrule_rrule_to_time_t_array(struct icalrecurrencetype recurrence, struct icaltimetype dtstart, time_t **const out_array, unsigned int *const out_count) {
     pg_rrule_rrule_to_time_t_array_until(recurrence, dtstart, icaltime_null_time(), out_array, out_count);
 }
 
-void pg_rrule_rrule_to_time_t_array_until(struct icalrecurrencetype recurrence,
-                                          struct icaltimetype dtstart,
-                                          struct icaltimetype until,
-                                          time_t **const out_array,
-                                          unsigned int *const out_count) {
+void pg_rrule_rrule_to_time_t_array_until(struct icalrecurrencetype recurrence, struct icaltimetype dtstart, struct icaltimetype until, time_t **const out_array, unsigned int *const out_count) {
     icalrecur_iterator *const recur_iterator = icalrecur_iterator_new(&recurrence, dtstart);
     if (recur_iterator == NULL) {
         const icalerrorenum err = icalerrno;
@@ -547,4 +478,53 @@ void pg_rrule_rrule_to_time_t_array_until(struct icalrecurrencetype recurrence,
     }
 
     icalarray_free(icaltimes_list);
+}
+
+Datum pg_rrule_get_bypart_rrule(struct icalrecurrencetype *recurrence_ref, icalrecurrencetype_byrule part, size_t max_size) {
+    // Return empty array if the by-rule part doesn't exist
+    if (!recurrence_ref->by[part].data) {
+        Datum *empty_array = (Datum *) palloc(0);
+        int16 typlen;
+        bool typbyval;
+        char typalign;
+        get_typlenbyvalalign(INT2OID, &typlen, &typbyval, &typalign);
+        ArrayType *result = construct_array(empty_array, 0, INT2OID, typlen, typbyval, typalign);
+        PG_RETURN_ARRAYTYPE_P(result);
+    }
+
+    unsigned int cnt = 0;
+    for (; cnt < max_size && recurrence_ref->by[part].data[cnt] != 0; cnt++);
+
+    if (cnt == 0) {
+        Datum *zero_array = (Datum *) palloc(sizeof(Datum));
+        zero_array[0] = Int16GetDatum(0);
+        int16 typlen;
+        bool typbyval;
+        char typalign;
+        get_typlenbyvalalign(INT2OID, &typlen, &typbyval, &typalign);
+        ArrayType *result = construct_array(zero_array, 1, INT2OID, typlen, typbyval, typalign);
+        PG_RETURN_ARRAYTYPE_P(result);
+    }
+
+    Datum *datum_elems = (Datum *) palloc(sizeof(Datum) * cnt);
+
+    for (unsigned int i = 0; i < cnt; i++) {
+        datum_elems[i] = Int16GetDatum(recurrence_ref->by[part].data[i]);
+    }
+
+    int16 typlen;
+    bool typbyval;
+    char typalign;
+    get_typlenbyvalalign(INT2OID, &typlen, &typbyval, &typalign);
+
+    ArrayType *result_array = construct_array(
+        datum_elems,
+        cnt,
+        INT2OID,
+        typlen,
+        typbyval,
+        typalign
+    );
+
+    PG_RETURN_ARRAYTYPE_P(result_array);
 }
