@@ -26,6 +26,7 @@ CREATE CAST (varchar AS rrule)
     WITH INOUT;
 
 
+/* occurrences */
 CREATE OR REPLACE FUNCTION get_occurrences(rrule, timestamp with time zone)
     RETURNS timestamp with time zone[]
     AS 'MODULE_PATHNAME', 'pg_rrule_get_occurrences_dtstart_tz'
@@ -47,6 +48,32 @@ CREATE OR REPLACE FUNCTION get_occurrences(rrule, timestamp, timestamp)
     AS 'MODULE_PATHNAME', 'pg_rrule_get_occurrences_dtstart_until'
     LANGUAGE C IMMUTABLE STRICT;
 
+/* operators */
+CREATE OR REPLACE FUNCTION rrule_eq(rrule, rrule)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'pg_rrule_eq'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OR REPLACE FUNCTION rrule_ne(rrule, rrule)
+RETURNS boolean
+AS 'MODULE_PATHNAME', 'pg_rrule_ne'
+LANGUAGE C IMMUTABLE STRICT;
+
+CREATE OPERATOR = (
+    LEFTARG = rrule,
+    RIGHTARG = rrule,
+    PROCEDURE = rrule_eq,
+    COMMUTATOR = =,
+    NEGATOR = <>
+);
+
+CREATE OPERATOR <> (
+    LEFTARG = rrule,
+    RIGHTARG = rrule,
+    PROCEDURE = rrule_ne,
+    COMMUTATOR = <>,
+    NEGATOR = =
+);
 
 /* FREQ */
 CREATE OR REPLACE FUNCTION get_freq(rrule)

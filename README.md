@@ -34,13 +34,12 @@ cd build
 cmake \
     -DSTATIC_ONLY=True \
     -DGOBJECT_INTROSPECTION=False \
-    -DCMAKE_DISABLE_FIND_PACKAGE_ICU=True \
     -DLIBICAL_BUILD_TESTING=False \
     -DICAL_BUILD_DOCS=False \
     -DICAL_GLIB=False \
-    -DCMAKE_CXX_FLAGS="-fPIC" \
+    -DCMAKE_CXX_FLAGS="-fPIC -std=c++11" \
     -DCMAKE_C_FLAGS="-fPIC" \
-    -DICU_ROOT=/usr/local \
+    -DCMAKE_DISABLE_FIND_PACKAGE_ICU=TRUE \
     ..
 make
 ```
@@ -78,10 +77,10 @@ and install it:
 ```sql
 CREATE EXTENSION pg_rrule;
 ```
-If the extension is already installed and need to be updated:
+If the extension is already installed and needs to be updated:
 ```sql
 ALTER EXTENSION pg_rrule UPDATE;
-# or
+-- or for specific version 
 ALTER EXTENSION pg_rrule UPDATE TO '0.3.0';
 ```
 

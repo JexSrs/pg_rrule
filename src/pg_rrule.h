@@ -14,6 +14,7 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(pg_rrule_out);
 Datum pg_rrule_out(PG_FUNCTION_ARGS);
 
+/* occurrences */
 PG_FUNCTION_INFO_V1(pg_rrule_get_occurrences_dtstart_tz);
 Datum pg_rrule_get_occurrences_dtstart_tz(PG_FUNCTION_ARGS);
 
@@ -25,6 +26,13 @@ Datum pg_rrule_get_occurrences_dtstart(PG_FUNCTION_ARGS);
 
 PG_FUNCTION_INFO_V1(pg_rrule_get_occurrences_dtstart_until);
 Datum pg_rrule_get_occurrences_dtstart_until(PG_FUNCTION_ARGS);
+
+/* operators */
+PG_FUNCTION_INFO_V1(pg_rrule_eq);
+Datum pg_rrule_eq(PG_FUNCTION_ARGS);
+
+PG_FUNCTION_INFO_V1(pg_rrule_ne);
+Datum pg_rrule_ne(PG_FUNCTION_ARGS);
 
 /* FREQ */
 PG_FUNCTION_INFO_V1(pg_rrule_get_freq_rrule);
@@ -85,7 +93,6 @@ Datum pg_rrule_get_bysetpos_rrule(PG_FUNCTION_ARGS);
 /* WKST */
 PG_FUNCTION_INFO_V1(pg_rrule_get_wkst_rrule);
 Datum pg_rrule_get_wkst_rrule(PG_FUNCTION_ARGS);
-
 
 Datum pg_rrule_get_occurrences_rrule(struct icalrecurrencetype recurrence,
                                      struct icaltimetype dtstart,
