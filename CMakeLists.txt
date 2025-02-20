@@ -44,15 +44,17 @@ message(STATUS "Determining architecture-specific library paths for ICU...")
 
 # Determine architecture-specific library path
 message(STATUS "System processor: ${CMAKE_SYSTEM_PROCESSOR}")
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-    set(ARCH_LIB_PATH "/usr/lib/aarch64-linux-gnu")
-    message(STATUS "Using path for aarch64 architecture: ${ARCH_LIB_PATH}")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-    set(ARCH_LIB_PATH "/usr/lib/x86_64-linux-gnu")
-    message(STATUS "Using path for x86_64 architecture: ${ARCH_LIB_PATH}")
-else()
-    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-endif()
+#if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+#    set(ARCH_LIB_PATH "/usr/lib/aarch64-linux-gnu")
+#    message(STATUS "Using path for aarch64 architecture: ${ARCH_LIB_PATH}")
+#elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+#    set(ARCH_LIB_PATH "/usr/lib/x86_64-linux-gnu")
+#    message(STATUS "Using path for x86_64 architecture: ${ARCH_LIB_PATH}")
+#else()
+#    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+#endif()
+
+set(ARCH_LIB_PATH "/usr/local/lib")
 
 # Set ICU library paths using the architecture-specific path
 set(ICU_UC_STATIC_LIBRARY "${ARCH_LIB_PATH}/libicuuc.a")
