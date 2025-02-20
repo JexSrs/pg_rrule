@@ -15,7 +15,7 @@ RUN apt-get update \
 RUN apt-get update && apt-get install -y \
     build-essential openssl cmake vim \
     pkg-config libgirepository1.0-dev gi-docgen gtk-doc-tools libstdc++-11-dev libgcc-11-dev \
-    postgresql-server-dev-17 \
+    postgresql-server-dev-17 postgresql-17 libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Download ICU from sourve and build using -fPIC params

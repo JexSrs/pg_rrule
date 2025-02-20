@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(pg_rrule C)
+project(pg_rrule C CXX)
 
 # ====================================
 # PostgreSQL
@@ -14,13 +14,29 @@ if (NOT PG_CONFIG)
 else()
     message(STATUS "pg_config found: ${PG_CONFIG}")
 endif ()
+
 # Get PostgreSQL paths
 execute_process(
         COMMAND ${PG_CONFIG} --includedir-server
         OUTPUT_VARIABLE PG_SERVER_INCLUDEDIR
         OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+
+execute_process(
+        COMMAND ${PG_CONFIG} --pkglibdir
+        OUTPUT_VARIABLE PG_PKGLIBDIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process(
+        COMMAND ${PG_CONFIG} --includedir
+        OUTPUT_VARIABLE PG_INCLUDEDIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 message(STATUS "PostgreSQL server include directory: ${PG_SERVER_INCLUDEDIR}")
+message(STATUS "PostgreSQL package library directory: ${PG_PKGLIBDIR}")
+message(STATUS "PostgreSQL include directory: ${PG_INCLUDEDIR}")
 
 # ====================================
 # LibICAL
@@ -85,8 +101,9 @@ add_library(pg_rrule MODULE
 # Set include directories
 target_include_directories(pg_rrule PRIVATE
         ${PG_SERVER_INCLUDEDIR}
+        ${PG_INCLUDEDIR}
         ${LIBICAL_INCLUDE_DIRS}
-        /usr/include # ICU headers
+        /usr/include
 )
 
 # Enable PIC
@@ -101,7 +118,9 @@ target_link_libraries(pg_rrule PRIVATE
         ${ICU_I18N_STATIC_LIBRARY}
         ${ICU_DATA_STATIC_LIBRARY}
         -Wl,--no-whole-archive
-        -ldl # Required for static ICU
+        -lstdc++
+        -lm
+        -ldl
         -pthread
 )
 
@@ -110,13 +129,18 @@ set_target_properties(pg_rrule PROPERTIES
         PREFIX ""
         OUTPUT_NAME "pg_rrule"
         POSITION_INDEPENDENT_CODE ON
+        # Add rpath to ensure it can find PostgreSQL's libraries at runtime
+        INSTALL_RPATH "${PG_PKGLIBDIR}"
+        BUILD_WITH_INSTALL_RPATH TRUE
 )
-
-message(STATUS "Successfully configured the pg_rrule library.")
 
 # Add compile definitions
 target_compile_definitions(pg_rrule PRIVATE
         HAVE_CONFIG_H
 )
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 message(STATUS "pg_rrule build configuration completed.")

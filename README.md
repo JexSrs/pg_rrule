@@ -37,7 +37,7 @@ cmake \
     -DLIBICAL_BUILD_TESTING=False \
     -DICAL_BUILD_DOCS=False \
     -DICAL_GLIB=False \
-    -DCMAKE_CXX_FLAGS="-fPIC" \
+    -DCMAKE_CXX_FLAGS="-fPIC -std=c++11" \
     -DCMAKE_C_FLAGS="-fPIC" \
     -DCMAKE_DISABLE_FIND_PACKAGE_ICU=TRUE \
     ..
