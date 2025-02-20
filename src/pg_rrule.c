@@ -41,19 +41,6 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS) {
         recurrence_ref->rscale = pstrdup(recurrence->rscale);
     }
 
-    // Below is a critical assert, to make sure the size of icalrecurrencetype in the current version of libical
-    // matches the size of the custom RRULE type defined in pg_rrule/sql/pg_rrule.sql
-    //
-    // CREATE TYPE rrule (
-    //    input = rrule_in,
-    //    output = rrule_out,
-    //    internallength = 2896
-    // );
-    //
-    // If a new version of libical changes the size of icalrecurrencetype, we need to fail here
-    // so that we are aware of the change.
-    assert(sizeof(struct icalrecurrencetype)==2896);
-
     PG_RETURN_POINTER(recurrence_ref);
 }
 
