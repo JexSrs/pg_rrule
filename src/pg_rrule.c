@@ -10,45 +10,82 @@ const char *icalrecur_freq_to_string(icalrecurrencetype_frequency kind); // no p
 const char *icalrecur_weekday_to_string(icalrecurrencetype_weekday kind); // no public definition in ical.h
 
 Datum pg_rrule_in(PG_FUNCTION_ARGS) {
-    const char *const rrule_str = PG_GETARG_CSTRING(0);
+    elog(NOTICE, "pg_rrule_in: Step 1");
+    const char* const rrule_str = PG_GETARG_CSTRING(0);
+    elog(NOTICE, "pg_rrule_in: Parsing string: '%s'", rrule_str);
 
+    elog(NOTICE, "pg_rrule_in: Step 2");
     struct icalrecurrencetype *recurrence = icalrecurrencetype_new_from_string(rrule_str);
 
     const icalerrorenum err = icalerrno;
-
-    if (err != ICAL_NO_ERROR) {
+    if (err != ICAL_NO_ERROR || !recurrence) {
         icalerror_clear_errno();
-
+        if (recurrence) icalrecurrencetype_unref(recurrence);
         ereport(ERROR,
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("Can't parse RRULE. iCal error: %s. RRULE \"%s\".", icalerror_strerror(err), rrule_str),
                  errhint("You need to omit \"RRULE:\" part of expression (if present)")));
     }
 
-    if (recurrence->freq == ICAL_NO_RECURRENCE) {
-        // libical 1.0 won't round trip this, so we treat it as an error.
-        ereport(ERROR,
-                (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-                 errmsg("Invalid RRULE frequency. RRULE \"%s\".", rrule_str)));
-    }
+    elog(NOTICE, "pg_rrule_in: Step 3");
 
-    // Need to copy result to palloc'd memory
-    struct icalrecurrencetype *recurrence_ref = palloc(sizeof(struct icalrecurrencetype));
-    memcpy(recurrence_ref, recurrence, sizeof(struct icalrecurrencetype));
+    // For VARIABLE length types, we need to allocate with SET_VARSIZE
+    size_t struct_size = sizeof(struct icalrecurrencetype);
+    struct icalrecurrencetype* recurrence_ref = (struct icalrecurrencetype*) palloc0(VARHDRSZ + struct_size);
+    SET_VARSIZE(recurrence_ref, VARHDRSZ + struct_size);
 
-    // Be sure to copy the strings using the pstrdup function
+    // The actual struct data starts after the varlena header
+    struct icalrecurrencetype* actual_struct = (struct icalrecurrencetype*)VARDATA(recurrence_ref);
+
+    // Copy the entire structure first
+    memcpy(actual_struct, recurrence, sizeof(*recurrence));
+
+    // Reset refcount for our copy
+    actual_struct->refcount = 1;
+
+    // Deep copy rscale string if it exists
     if (recurrence->rscale) {
-        recurrence_ref->rscale = pstrdup(recurrence->rscale);
+        size_t rscale_len = strlen(recurrence->rscale) + 1;
+        actual_struct->rscale = palloc(rscale_len);
+        memcpy(actual_struct->rscale, recurrence->rscale, rscale_len);
+    } else {
+        actual_struct->rscale = NULL;
     }
+
+    // Deep copy the by arrays
+    for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
+        icalrecurrence_by_data *src_by = &recurrence->by[i];
+        icalrecurrence_by_data *dst_by = &actual_struct->by[i];
+
+        if (src_by->data && src_by->size > 0) {
+            size_t data_size = (size_t)src_by->size * sizeof(src_by->data[0]);
+            dst_by->data = palloc(data_size);
+            memcpy(dst_by->data, src_by->data, data_size);
+            dst_by->size = src_by->size;
+        } else {
+            dst_by->data = NULL;
+            dst_by->size = 0;
+        }
+    }
+
+    icalrecurrencetype_unref(recurrence);
+
+    elog(NOTICE, "pg_rrule_in: Step 4");
 
     PG_RETURN_POINTER(recurrence_ref);
 }
 
 Datum pg_rrule_out(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
+    elog(NOTICE, "pg_rrule_out: Step 1");
 
+    // For VARIABLE length types, extract the actual struct from the varlena wrapper
+    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+
+    elog(NOTICE, "pg_rrule_out: Step 2");
     char *const rrule_str = icalrecurrencetype_as_string(recurrence_ref);
 
+    elog(NOTICE, "pg_rrule_out: Step 3");
     const icalerrorenum err = icalerrno;
     if (err != ICAL_NO_ERROR) {
         icalerror_clear_errno();
@@ -56,13 +93,140 @@ Datum pg_rrule_out(PG_FUNCTION_ARGS) {
         ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),errmsg("Can't convert RRULE to string. iCal error: %s", icalerror_strerror(err))));
     }
 
+    elog(NOTICE, "pg_rrule_out: Step 4");
     const size_t str_bytes = sizeof(char) * (strlen(rrule_str) + 1);
     char *const rrule_str_copy = palloc(str_bytes);
-
     memcpy(rrule_str_copy, rrule_str, str_bytes);
     free(rrule_str);
 
     PG_RETURN_CSTRING(rrule_str_copy);
+}
+
+Datum pg_rrule_send(PG_FUNCTION_ARGS) {
+    elog(NOTICE, "pg_rrule_send: Entry point");
+
+    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence = (struct icalrecurrencetype*)VARDATA(varlena_data);
+
+    elog(NOTICE, "pg_rrule_send: Got struct pointer");
+
+    // Now use the binary serialization as before...
+    StringInfoData buf;
+    pq_begintypsend(&buf);
+    
+    elog(NOTICE, "pg_rrule_send: Started buffer");
+    
+    // Send basic fields individually
+    pq_sendint32(&buf, recurrence->refcount);
+    pq_sendint32(&buf, (int32)recurrence->freq);
+    pq_sendint32(&buf, recurrence->count);
+    pq_sendint16(&buf, recurrence->interval);
+    pq_sendint32(&buf, (int32)recurrence->week_start);
+    pq_sendint32(&buf, (int32)recurrence->skip);
+    
+    elog(NOTICE, "pg_rrule_send: Sent basic fields");
+    
+    // Send until time
+    pq_sendint32(&buf, recurrence->until.year);
+    pq_sendint32(&buf, recurrence->until.month);
+    pq_sendint32(&buf, recurrence->until.day);
+    pq_sendint32(&buf, recurrence->until.hour);
+    pq_sendint32(&buf, recurrence->until.minute);
+    pq_sendint32(&buf, recurrence->until.second);
+    pq_sendint32(&buf, recurrence->until.is_date);
+    
+    elog(NOTICE, "pg_rrule_send: Sent until fields");
+    
+    // Send rscale string
+    if (recurrence->rscale) {
+        int32 len = strlen(recurrence->rscale);
+        pq_sendint32(&buf, len);
+        pq_sendbytes(&buf, recurrence->rscale, len);
+        elog(NOTICE, "pg_rrule_send: Sent rscale (len=%d)", len);
+    } else {
+        pq_sendint32(&buf, -1); // NULL marker
+        elog(NOTICE, "pg_rrule_send: Sent NULL rscale");
+    }
+    
+    elog(NOTICE, "pg_rrule_send: Starting by arrays");
+    
+    // Send by arrays
+    for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
+        elog(NOTICE, "pg_rrule_send: Processing by[%d], size=%d", i, recurrence->by[i].size);
+        
+        if (recurrence->by[i].size > 0 && recurrence->by[i].data) {
+            pq_sendint16(&buf, recurrence->by[i].size);
+            // Send each short individually
+            for (int j = 0; j < recurrence->by[i].size; j++) {
+                pq_sendint16(&buf, recurrence->by[i].data[j]);
+            }
+            elog(NOTICE, "pg_rrule_send: Sent by[%d] with %d elements", i, recurrence->by[i].size);
+        } else {
+            pq_sendint16(&buf, 0);
+            elog(NOTICE, "pg_rrule_send: Sent by[%d] as empty", i);
+        }
+    }
+    
+    elog(NOTICE, "pg_rrule_send: Ending buffer");
+    PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
+}
+
+Datum pg_rrule_recv(PG_FUNCTION_ARGS) {
+    StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *recurrence;
+
+    elog(NOTICE, "pg_rrule_recv: Starting deserialization");
+
+    // Allocate and zero-initialize
+    recurrence = palloc0(sizeof(struct icalrecurrencetype));
+
+    // Receive basic fields
+    recurrence->refcount = pq_getmsgint(buf, 4);
+    recurrence->freq = (icalrecurrencetype_frequency)pq_getmsgint(buf, 4);
+    recurrence->count = pq_getmsgint(buf, 4);
+    recurrence->interval = pq_getmsgint(buf, 2);
+    recurrence->week_start = (icalrecurrencetype_weekday)pq_getmsgint(buf, 4);
+    recurrence->skip = (icalrecurrencetype_skip)pq_getmsgint(buf, 4);
+
+    // Receive until time
+    recurrence->until.year = pq_getmsgint(buf, 4);
+    recurrence->until.month = pq_getmsgint(buf, 4);
+    recurrence->until.day = pq_getmsgint(buf, 4);
+    recurrence->until.hour = pq_getmsgint(buf, 4);
+    recurrence->until.minute = pq_getmsgint(buf, 4);
+    recurrence->until.second = pq_getmsgint(buf, 4);
+    recurrence->until.is_date = pq_getmsgint(buf, 4);
+
+    // Receive rscale
+    int32 rscale_len = pq_getmsgint(buf, 4);
+    if (rscale_len >= 0) {
+        recurrence->rscale = palloc(rscale_len + 1);
+        memcpy(recurrence->rscale, pq_getmsgbytes(buf, rscale_len), rscale_len);
+        recurrence->rscale[rscale_len] = '\0';
+    } else {
+        recurrence->rscale = NULL;
+    }
+
+    // Receive by arrays
+    for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
+        short size = pq_getmsgint(buf, 2);
+        elog(NOTICE, "pg_rrule_recv: Received by[%d] size: %d", i, size);
+        if (size > 0) {
+            recurrence->by[i].size = size;
+            recurrence->by[i].data = palloc(size * sizeof(short));
+            // Receive each short individually
+            for (int j = 0; j < size; j++) {
+                recurrence->by[i].data[j] = pq_getmsgint(buf, 2);
+                elog(NOTICE, "pg_rrule_recv: Received by[%d].data[%d] = %d", i, j, recurrence->by[i].data[j]);
+            }
+        } else {
+            recurrence->by[i].size = 0;
+            recurrence->by[i].data = NULL;
+        }
+    }
+
+    elog(NOTICE, "pg_rrule_recv: Deserialization complete");
+    PG_RETURN_POINTER(recurrence);
 }
 
 /* occurrences */

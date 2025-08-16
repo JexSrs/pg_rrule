@@ -26,6 +26,7 @@ PG_MODULE_MAGIC;
  * @param fcinfo Function call info containing cstring argument
  * @return Datum containing pointer to icalrecurrencetype structure
  * @throws ERROR if RRULE string is invalid or has unsupported frequency
+ * @see https://www.postgresql.org/docs/17//sql-createtype.html
  */
 PG_FUNCTION_INFO_V1(pg_rrule_in);
 Datum pg_rrule_in(PG_FUNCTION_ARGS);
@@ -39,9 +40,44 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule pointer argument
  * @return Datum containing cstring representation of the RRULE
  * @throws ERROR if conversion to string fails
+ * @see https://www.postgresql.org/docs/17//sql-createtype.html
  */
 PG_FUNCTION_INFO_V1(pg_rrule_out);
 Datum pg_rrule_out(PG_FUNCTION_ARGS);
+
+/**
+ * pg_rrule_send - Binary output function for rrule type
+ *
+ * Serializes an icalrecurrencetype structure to binary format for storage
+ * and network transmission. This ensures data integrity across different
+ * client contexts and connection types.
+ *
+ * Serializes all fields including:
+ * - Core fields (freq, week_start, count, interval)
+ * - Until datetime with timezone information
+ * - All BY* rule arrays (BYSECOND, BYMINUTE, BYHOUR, etc.)
+ * - RSCALE calendar system identifier
+ *
+ * @param fcinfo Function call info containing rrule pointer argument
+ * @return Datum containing bytea with serialized binary data
+ * @see https://www.postgresql.org/docs/17//sql-createtype.html
+ */
+PG_FUNCTION_INFO_V1(pg_rrule_send);
+Datum pg_rrule_send(PG_FUNCTION_ARGS);
+
+/**
+ * pg_rrule_recv - Binary input function for rrule type
+ *
+ * Deserializes binary data back to an icalrecurrencetype structure.
+ * This function reconstructs the complete RRULE from the binary format
+ * created by pg_rrule_send.
+ *
+ * @param fcinfo Function call info containing internal buffer argument
+ * @return Datum containing pointer to reconstructed icalrecurrencetype
+ * @see https://www.postgresql.org/docs/17//sql-createtype.html
+ */
+PG_FUNCTION_INFO_V1(pg_rrule_recv);
+Datum pg_rrule_recv(PG_FUNCTION_ARGS);
 
 /* occurrences */
 /* ========================================================================

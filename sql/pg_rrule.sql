@@ -12,13 +12,25 @@ OR REPLACE FUNCTION rrule_out(rrule)
     AS 'MODULE_PATHNAME', 'pg_rrule_out'
     LANGUAGE C IMMUTABLE STRICT;
 
+CREATE
+OR REPLACE FUNCTION rrule_send(rrule)
+    RETURNS bytea
+    AS 'MODULE_PATHNAME', 'pg_rrule_send'
+    LANGUAGE C IMMUTABLE STRICT;
+
+CREATE
+OR REPLACE FUNCTION rrule_recv(internal)
+    RETURNS rrule
+    AS 'MODULE_PATHNAME', 'pg_rrule_recv'
+    LANGUAGE C IMMUTABLE STRICT;
 
 CREATE TYPE rrule (
-   input = rrule_in,
-   output = rrule_out,
-   internallength = 2896
+    input = rrule_in,
+    output = rrule_out,
+    send = rrule_send,
+    receive = rrule_recv,
+    internallength = VARIABLE
 );
-
 
 CREATE CAST (text AS rrule)
     WITH INOUT;
