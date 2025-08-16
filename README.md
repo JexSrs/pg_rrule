@@ -16,14 +16,14 @@ This extension provides functionality to work with RRULE expressions in PostgreS
 
 ### Build
 
-Clone repository with submodules:
+Clone the repository with submodules:
 ```sh
 git clone --recurse-submodules https://github.com/JexSrs/pg_rrule.git
 ```
 
-Start docker container which has all the dependencies installed:
+Start a docker container which has all the dependencies installed:
 ```sh
-docker compose build && docker compose run cdev bash 
+cd pg_rrule && docker compose build && docker compose run cdev bash
 ```
 
 Build `libical`:
