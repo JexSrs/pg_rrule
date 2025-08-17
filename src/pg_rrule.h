@@ -166,7 +166,7 @@ Datum pg_rrule_ne(PG_FUNCTION_ARGS);
  * ======================================================================== */
 
 /**
- * pg_rrule_get_freq_rrule - Extract FREQ property
+ * pg_rrule_get_freq - Extract FREQ property
  *
  * Returns the frequency component of the RRULE as a text value.
  * Possible values: SECONDLY, MINUTELY, HOURLY, DAILY, WEEKLY, MONTHLY, YEARLY
@@ -174,11 +174,11 @@ Datum pg_rrule_ne(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing text representation of frequency
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_freq_rrule);
-Datum pg_rrule_get_freq_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_freq);
+Datum pg_rrule_get_freq(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_until_rrule - Extract UNTIL property as timestamp
+ * pg_rrule_get_until - Extract UNTIL property as timestamp
  *
  * Returns the UNTIL date/time as a timestamp without timezone.
  * Returns NULL if no UNTIL is specified in the RRULE.
@@ -186,11 +186,11 @@ Datum pg_rrule_get_freq_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing timestamp or NULL
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_until_rrule);
-Datum pg_rrule_get_until_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_until);
+Datum pg_rrule_get_until(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_untiltz_rrule - Extract UNTIL property as timestamptz
+ * pg_rrule_get_untiltz - Extract UNTIL property as timestamptz
  *
  * Returns the UNTIL date/time as a timestamp with timezone information.
  * Returns NULL if no UNTIL is specified in the RRULE.
@@ -198,11 +198,11 @@ Datum pg_rrule_get_until_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing timestamptz or NULL
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_untiltz_rrule);
-Datum pg_rrule_get_untiltz_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_untiltz);
+Datum pg_rrule_get_untiltz(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_count_rrule - Extract COUNT property
+ * pg_rrule_get_count - Extract COUNT property
  *
  * Returns the COUNT value specifying the maximum number of occurrences.
  * Returns NULL if no COUNT is specified (infinite recurrence or UNTIL-bounded).
@@ -210,11 +210,11 @@ Datum pg_rrule_get_untiltz_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer count or NULL
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_count_rrule);
-Datum pg_rrule_get_count_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_count);
+Datum pg_rrule_get_count(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_interval_rrule - Extract INTERVAL property
+ * pg_rrule_get_interval - Extract INTERVAL property
  *
  * Returns the INTERVAL value specifying the step size for recurrence.
  * Default is 1 if not specified in the RRULE.
@@ -222,11 +222,11 @@ Datum pg_rrule_get_count_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer interval value
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_interval_rrule);
-Datum pg_rrule_get_interval_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_interval);
+Datum pg_rrule_get_interval(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_bysecond_rrule - Extract BYSECOND property
+ * pg_rrule_get_bysecond - Extract BYSECOND property
  *
  * Returns an array of integers representing the seconds within a minute
  * when the recurrence should occur (0-60, where 60 represents leap seconds).
@@ -234,11 +234,11 @@ Datum pg_rrule_get_interval_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_bysecond_rrule);
-Datum pg_rrule_get_bysecond_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_bysecond);
+Datum pg_rrule_get_bysecond(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_byminute_rrule - Extract BYMINUTE property
+ * pg_rrule_get_byminute - Extract BYMINUTE property
  *
  * Returns an array of integers representing the minutes within an hour
  * when the recurrence should occur (0-59).
@@ -246,11 +246,11 @@ Datum pg_rrule_get_bysecond_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_byminute_rrule);
-Datum pg_rrule_get_byminute_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_byminute);
+Datum pg_rrule_get_byminute(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_byhour_rrule - Extract BYHOUR property
+ * pg_rrule_get_byhour - Extract BYHOUR property
  *
  * Returns an array of integers representing the hours within a day
  * when the recurrence should occur (0-23).
@@ -258,11 +258,11 @@ Datum pg_rrule_get_byminute_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_byhour_rrule);
-Datum pg_rrule_get_byhour_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_byhour);
+Datum pg_rrule_get_byhour(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_byday_rrule - Extract BYDAY property
+ * pg_rrule_get_byday - Extract BYDAY property
  *
  * Returns an array of integers representing the days of the week
  * when the recurrence should occur. Values can include optional
@@ -271,11 +271,11 @@ Datum pg_rrule_get_byhour_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_byday_rrule);
-Datum pg_rrule_get_byday_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_byday);
+Datum pg_rrule_get_byday(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_bymonthday_rrule - Extract BYMONTHDAY property
+ * pg_rrule_get_bymonthday - Extract BYMONTHDAY property
  *
  * Returns an array of integers representing the days of the month
  * when the recurrence should occur (1-31, or negative for counting
@@ -284,11 +284,11 @@ Datum pg_rrule_get_byday_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_bymonthday_rrule);
-Datum pg_rrule_get_bymonthday_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_bymonthday);
+Datum pg_rrule_get_bymonthday(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_byyearday_rrule - Extract BYYEARDAY property
+ * pg_rrule_get_byyearday - Extract BYYEARDAY property
  *
  * Returns an array of integers representing the days of the year
  * when the recurrence should occur (1-366, or negative for counting
@@ -297,11 +297,11 @@ Datum pg_rrule_get_bymonthday_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_byyearday_rrule);
-Datum pg_rrule_get_byyearday_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_byyearday);
+Datum pg_rrule_get_byyearday(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_byweekno_rrule - Extract BYWEEKNO property
+ * pg_rrule_get_byweekno - Extract BYWEEKNO property
  *
  * Returns an array of integers representing the weeks of the year
  * when the recurrence should occur (1-53, or negative for counting
@@ -310,11 +310,11 @@ Datum pg_rrule_get_byyearday_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_byweekno_rrule);
-Datum pg_rrule_get_byweekno_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_byweekno);
+Datum pg_rrule_get_byweekno(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_bymonth_rrule - Extract BYMONTH property
+ * pg_rrule_get_bymonth - Extract BYMONTH property
  *
  * Returns an array of integers representing the months of the year
  * when the recurrence should occur (1-12).
@@ -322,11 +322,11 @@ Datum pg_rrule_get_byweekno_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_bymonth_rrule);
-Datum pg_rrule_get_bymonth_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_bymonth);
+Datum pg_rrule_get_bymonth(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_bysetpos_rrule - Extract BYSETPOS property
+ * pg_rrule_get_bysetpos - Extract BYSETPOS property
  *
  * Returns an array of integers representing which occurrences within
  * the recurrence set should be included (1-366, or negative for
@@ -335,11 +335,11 @@ Datum pg_rrule_get_bymonth_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing integer array or NULL if not specified
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_bysetpos_rrule);
-Datum pg_rrule_get_bysetpos_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_bysetpos);
+Datum pg_rrule_get_bysetpos(PG_FUNCTION_ARGS);
 
 /**
- * pg_rrule_get_wkst_rrule - Extract WKST (week start) property
+ * pg_rrule_get_wkst - Extract WKST (week start) property
  *
  * Returns the day of the week that marks the beginning of the work week
  * as a text value (MO, TU, WE, TH, FR, SA, SU). Default is MO if not specified.
@@ -347,15 +347,15 @@ Datum pg_rrule_get_bysetpos_rrule(PG_FUNCTION_ARGS);
  * @param fcinfo Function call info containing rrule argument
  * @return Datum containing text representation of week start day
  */
-PG_FUNCTION_INFO_V1(pg_rrule_get_wkst_rrule);
-Datum pg_rrule_get_wkst_rrule(PG_FUNCTION_ARGS);
+PG_FUNCTION_INFO_V1(pg_rrule_get_wkst);
+Datum pg_rrule_get_wkst(PG_FUNCTION_ARGS);
 
 /* ========================================================================
  * Internal Helper Functions
  * ======================================================================== */
 
 /**
- * pg_rrule_get_occurrences_rrule - Internal occurrence generation helper
+ * pg_rrule_get_occurrences - Internal occurrence generation helper
  *
  * Core function for generating recurrence occurrences from an RRULE
  * and start time, with optional timezone handling.
@@ -365,12 +365,12 @@ Datum pg_rrule_get_wkst_rrule(PG_FUNCTION_ARGS);
  * @param use_tz Whether to preserve timezone information
  * @return Datum containing array of timestamp values
  */
-Datum pg_rrule_get_occurrences_rrule(struct icalrecurrencetype recurrence,
+Datum pg_rrule_get_occurrences(struct icalrecurrencetype recurrence,
                                      struct icaltimetype dtstart,
                                      bool use_tz);
 
 /**
- * pg_rrule_get_occurrences_rrule_until - Internal bounded occurrence generation helper
+ * pg_rrule_get_occurrences_until - Internal bounded occurrence generation helper
  *
  * Core function for generating recurrence occurrences within a specific
  * time range, with optional timezone handling.
@@ -381,7 +381,7 @@ Datum pg_rrule_get_occurrences_rrule(struct icalrecurrencetype recurrence,
  * @param use_tz Whether to preserve timezone information
  * @return Datum containing array of timestamp values within range
  */
-Datum pg_rrule_get_occurrences_rrule_until(struct icalrecurrencetype recurrence,
+Datum pg_rrule_get_occurrences_until(struct icalrecurrencetype recurrence,
                                            struct icaltimetype dtstart,
                                            struct icaltimetype until,
                                            bool use_tz);
@@ -421,7 +421,7 @@ void pg_rrule_rrule_to_time_t_array_until(struct icalrecurrencetype recurrence,
                                           unsigned int* const out_count);
 
 /**
- * pg_rrule_get_bypart_rrule - Generic BY* property extractor
+ * pg_rrule_get_bypart - Generic BY* property extractor
  *
  * Internal helper function for extracting any BY* rule array from
  * an icalrecurrencetype structure. Used by all the specific BY*
@@ -432,7 +432,7 @@ void pg_rrule_rrule_to_time_t_array_until(struct icalrecurrencetype recurrence,
  * @param max_size Maximum size of the BY* array for bounds checking
  * @return Datum containing integer array or NULL if not specified
  */
-Datum pg_rrule_get_bypart_rrule(struct icalrecurrencetype *recurrence_ref, icalrecurrencetype_byrule part, size_t max_size);
+Datum pg_rrule_get_bypart(struct icalrecurrencetype *recurrence_ref, icalrecurrencetype_byrule part, size_t max_size);
 
 /**
  * @brief Helper function to convert flattened PostgreSQL storage format to temporary struct with real pointers.
