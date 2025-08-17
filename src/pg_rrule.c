@@ -2,14 +2,12 @@
 
 #include <utils/timestamp.h>
 #include <utils/array.h>
-#include <catalog/pg_type.h> // oids
-#include <utils/lsyscache.h> // get_typlenbyvalalign
-#include "utils/builtins.h" // cstring_to_text
+#include <catalog/pg_type.h>
+#include <utils/lsyscache.h>
+#include "utils/builtins.h"
 
 Datum pg_rrule_in(PG_FUNCTION_ARGS) {
     const char* const rrule_str = PG_GETARG_CSTRING(0);
-    elog(NOTICE, "pg_rrule_in: Parsing string: '%s'", rrule_str);
-
     struct icalrecurrencetype *recurrence = icalrecurrencetype_new_from_string(rrule_str);
 
     const icalerrorenum err = icalerrno;
@@ -20,19 +18,6 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS) {
                 (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
                  errmsg("Can't parse RRULE. iCal error: %s. RRULE \"%s\".", icalerror_strerror(err), rrule_str),
                  errhint("You need to omit \"RRULE:\" part of expression (if present)")));
-    }
-
-    // Debug: Show what libical parsed
-    elog(NOTICE, "pg_rrule_in: After libical parsing:");
-    for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
-        if (recurrence->by[i].size > 0) {
-            elog(NOTICE, "  libical by[%d].size: %d", i, recurrence->by[i].size);
-            if (recurrence->by[i].data) {
-                for (int j = 0; j < recurrence->by[i].size && j < 5; j++) {
-                    elog(NOTICE, "    libical by[%d].data[%d]: %d", i, j, recurrence->by[i].data[j]);
-                }
-            }
-        }
     }
 
     // Calculate total size needed for flattened storage
@@ -54,9 +39,6 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS) {
 
     size_t total_size = base_size + arrays_size + rscale_size;
 
-    elog(NOTICE, "pg_rrule_in: Sizes - base:%zu, arrays:%zu, rscale:%zu, total:%zu",
-         base_size, arrays_size, rscale_size, total_size);
-
     // Allocate flattened structure
     char *flattened = palloc0(VARHDRSZ + total_size);
     SET_VARSIZE(flattened, VARHDRSZ + total_size);
@@ -74,9 +56,6 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS) {
         if (recurrence->by[i].size > 0 && recurrence->by[i].data) {
             size_t array_bytes = recurrence->by[i].size * sizeof(short);
 
-            elog(NOTICE, "pg_rrule_in: Copying by[%d] - size:%d, bytes:%zu",
-                 i, recurrence->by[i].size, array_bytes);
-
             // Copy array data to our flattened buffer
             memcpy(var_data_pos, recurrence->by[i].data, array_bytes);
 
@@ -84,8 +63,6 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS) {
             size_t offset = var_data_pos - VARDATA(flattened);
             flat_struct->by[i].data = (short*)offset;
             flat_struct->by[i].size = recurrence->by[i].size;
-
-            elog(NOTICE, "pg_rrule_in: Stored by[%d] at offset %zu", i, offset);
 
             var_data_pos += array_bytes;
         } else {
@@ -100,36 +77,18 @@ Datum pg_rrule_in(PG_FUNCTION_ARGS) {
         // Store as offset from start of VARDATA
         size_t offset = var_data_pos - VARDATA(flattened);
         flat_struct->rscale = (char*)offset;
-        elog(NOTICE, "pg_rrule_in: Stored rscale at offset %zu", offset);
         var_data_pos += rscale_size;
     } else {
         flat_struct->rscale = NULL;
     }
 
-    // Verify what we stored
-    elog(NOTICE, "pg_rrule_in: Verification of flattened structure:");
-    elog(NOTICE, "  freq: %d, interval: %d", flat_struct->freq, flat_struct->interval);
-    for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
-        if (flat_struct->by[i].size > 0) {
-            elog(NOTICE, "  flat by[%d].size: %d, data_offset: %p",
-                 i, flat_struct->by[i].size, flat_struct->by[i].data);
-        }
-    }
-
     icalrecurrencetype_unref(recurrence);
-
     PG_RETURN_POINTER(flattened);
 }
 
 Datum pg_rrule_out(PG_FUNCTION_ARGS) {
-    elog(NOTICE, "pg_rrule_out: Starting");
-
     char *flattened = (char*) PG_GETARG_POINTER(0);
     struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(flattened);
-
-    elog(NOTICE, "pg_rrule_out: VARSIZE = %d", VARSIZE(flattened));
-    elog(NOTICE, "pg_rrule_out: Basic fields - freq:%d, interval:%d",
-         flat_struct->freq, flat_struct->interval);
 
     // Create a temporary struct with real pointers for libical
     struct icalrecurrencetype temp_struct;
@@ -143,14 +102,6 @@ Datum pg_rrule_out(PG_FUNCTION_ARGS) {
             // Convert offset back to pointer
             size_t offset = (size_t)flat_struct->by[i].data;
             temp_struct.by[i].data = (short*)(base_addr + offset);
-
-            elog(NOTICE, "pg_rrule_out: by[%d] - size:%d, offset:%zu",
-                 i, temp_struct.by[i].size, offset);
-
-            // Debug the actual values
-            for (int j = 0; j < temp_struct.by[i].size && j < 5; j++) {
-                elog(NOTICE, "  by[%d].data[%d]: %d", i, j, temp_struct.by[i].data[j]);
-            }
         } else {
             temp_struct.by[i].data = NULL;
         }
@@ -160,18 +111,9 @@ Datum pg_rrule_out(PG_FUNCTION_ARGS) {
     if (flat_struct->rscale != NULL) {
         size_t offset = (size_t)flat_struct->rscale;
         temp_struct.rscale = base_addr + offset;
-        elog(NOTICE, "pg_rrule_out: rscale at offset %zu: '%s'", offset, temp_struct.rscale);
     }
 
-    elog(NOTICE, "pg_rrule_out: Calling icalrecurrencetype_as_string");
     char *const rrule_str = icalrecurrencetype_as_string(&temp_struct);
-
-    if (rrule_str) {
-        elog(NOTICE, "pg_rrule_out: Generated string: '%s'", rrule_str);
-    } else {
-        elog(NOTICE, "pg_rrule_out: icalrecurrencetype_as_string returned NULL");
-    }
-
     const icalerrorenum err = icalerrno;
     if (err != ICAL_NO_ERROR) {
         icalerror_clear_errno();
@@ -196,61 +138,55 @@ Datum pg_rrule_out(PG_FUNCTION_ARGS) {
 }
 
 Datum pg_rrule_send(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(varlena_data);
 
-    elog(NOTICE, "pg_rrule_send: Starting send");
-    elog(NOTICE, "pg_rrule_send: freq=%d, interval=%d", recurrence->freq, recurrence->interval);
+    char *base_addr = VARDATA(varlena_data);
 
-    // Debug the by arrays before sending
-    for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
-        if (recurrence->by[i].size > 0) {
-            elog(NOTICE, "pg_rrule_send: by[%d].size: %d", i, recurrence->by[i].size);
-            if (recurrence->by[i].data) {
-                for (int j = 0; j < recurrence->by[i].size && j < 3; j++) {
-                    elog(NOTICE, "pg_rrule_send: by[%d].data[%d]: %d", i, j, recurrence->by[i].data[j]);
-                }
-            }
-        }
-    }
-
-    // Now use the binary serialization as before...
+    // Now use the binary serialization
     StringInfoData buf;
     pq_begintypsend(&buf);
 
     // Send basic fields individually
-    pq_sendint32(&buf, recurrence->refcount);
-    pq_sendint32(&buf, (int32)recurrence->freq);
-    pq_sendint32(&buf, recurrence->count);
-    pq_sendint16(&buf, recurrence->interval);
-    pq_sendint32(&buf, (int32)recurrence->week_start);
-    pq_sendint32(&buf, (int32)recurrence->skip);
+    pq_sendint32(&buf, flat_struct->refcount);
+    pq_sendint32(&buf, (int32)flat_struct->freq);
+    pq_sendint32(&buf, flat_struct->count);
+    pq_sendint16(&buf, flat_struct->interval);
+    pq_sendint32(&buf, (int32)flat_struct->week_start);
+    pq_sendint32(&buf, (int32)flat_struct->skip);
 
     // Send until time
-    pq_sendint32(&buf, recurrence->until.year);
-    pq_sendint32(&buf, recurrence->until.month);
-    pq_sendint32(&buf, recurrence->until.day);
-    pq_sendint32(&buf, recurrence->until.hour);
-    pq_sendint32(&buf, recurrence->until.minute);
-    pq_sendint32(&buf, recurrence->until.second);
-    pq_sendint32(&buf, recurrence->until.is_date);
+    pq_sendint32(&buf, flat_struct->until.year);
+    pq_sendint32(&buf, flat_struct->until.month);
+    pq_sendint32(&buf, flat_struct->until.day);
+    pq_sendint32(&buf, flat_struct->until.hour);
+    pq_sendint32(&buf, flat_struct->until.minute);
+    pq_sendint32(&buf, flat_struct->until.second);
+    pq_sendint32(&buf, flat_struct->until.is_date);
 
-    // Send rscale string
-    if (recurrence->rscale) {
-        int32 len = strlen(recurrence->rscale);
+    // Send rscale string (convert offset to pointer if needed)
+    if (flat_struct->rscale != NULL) {
+        size_t rscale_offset = (size_t)flat_struct->rscale;
+        char *real_rscale = base_addr + rscale_offset;
+        int32 len = strlen(real_rscale);
         pq_sendint32(&buf, len);
-        pq_sendbytes(&buf, recurrence->rscale, len);
+        pq_sendbytes(&buf, real_rscale, len);
     } else {
         pq_sendint32(&buf, -1); // NULL marker
     }
 
-    // Send by arrays
+    // Send by arrays (convert offsets to pointers)
     for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
-        if (recurrence->by[i].size > 0 && recurrence->by[i].data) {
-            pq_sendint16(&buf, recurrence->by[i].size);
+        if (flat_struct->by[i].size > 0 && flat_struct->by[i].data != NULL) {
+            pq_sendint16(&buf, flat_struct->by[i].size);
+
+            // Convert offset to real pointer
+            size_t offset = (size_t)flat_struct->by[i].data;
+            short *real_data = (short*)(base_addr + offset);
+
             // Send each short individually
-            for (int j = 0; j < recurrence->by[i].size; j++) {
-                pq_sendint16(&buf, recurrence->by[i].data[j]);
+            for (int j = 0; j < flat_struct->by[i].size; j++) {
+                pq_sendint16(&buf, real_data[j]);
             }
         } else {
             pq_sendint16(&buf, 0);
@@ -263,77 +199,113 @@ Datum pg_rrule_send(PG_FUNCTION_ARGS) {
 Datum pg_rrule_recv(PG_FUNCTION_ARGS) {
     StringInfo buf = (StringInfo) PG_GETARG_POINTER(0);
 
-    elog(NOTICE, "pg_rrule_recv: Starting receive");
+    // First, receive all data into temporary variables
+    struct icalrecurrencetype temp_struct;
+    memset(&temp_struct, 0, sizeof(temp_struct));
 
-    // Allocate as varlena structure like pg_rrule_in does
-    size_t struct_size = sizeof(struct icalrecurrencetype);
-    struct icalrecurrencetype* recurrence_ref = (struct icalrecurrencetype*) palloc0(VARHDRSZ + struct_size);
-    SET_VARSIZE(recurrence_ref, VARHDRSZ + struct_size);
-
-    // The actual struct data starts after the varlena header
-    struct icalrecurrencetype* recurrence = (struct icalrecurrencetype*)VARDATA(recurrence_ref);
-
-    elog(NOTICE, "pg_rrule_recv: Allocated memory, receiving basic fields");
-
-    // Receive basic fields into the actual struct (not the wrapper)
-    recurrence->refcount = pq_getmsgint(buf, 4);
-    recurrence->freq = (icalrecurrencetype_frequency)pq_getmsgint(buf, 4);
-    recurrence->count = pq_getmsgint(buf, 4);
-    recurrence->interval = pq_getmsgint(buf, 2);
-    recurrence->week_start = (icalrecurrencetype_weekday)pq_getmsgint(buf, 4);
-    recurrence->skip = (icalrecurrencetype_skip)pq_getmsgint(buf, 4);
-
-    elog(NOTICE, "pg_rrule_recv: Received basic fields - freq:%d, interval:%d",
-         recurrence->freq, recurrence->interval);
+    // Receive basic fields
+    temp_struct.refcount = pq_getmsgint(buf, 4);
+    temp_struct.freq = (icalrecurrencetype_frequency)pq_getmsgint(buf, 4);
+    temp_struct.count = pq_getmsgint(buf, 4);
+    temp_struct.interval = pq_getmsgint(buf, 2);
+    temp_struct.week_start = (icalrecurrencetype_weekday)pq_getmsgint(buf, 4);
+    temp_struct.skip = (icalrecurrencetype_skip)pq_getmsgint(buf, 4);
 
     // Receive until time
-    recurrence->until.year = pq_getmsgint(buf, 4);
-    recurrence->until.month = pq_getmsgint(buf, 4);
-    recurrence->until.day = pq_getmsgint(buf, 4);
-    recurrence->until.hour = pq_getmsgint(buf, 4);
-    recurrence->until.minute = pq_getmsgint(buf, 4);
-    recurrence->until.second = pq_getmsgint(buf, 4);
-    recurrence->until.is_date = pq_getmsgint(buf, 4);
-
-    elog(NOTICE, "pg_rrule_recv: Received until time");
+    temp_struct.until.year = pq_getmsgint(buf, 4);
+    temp_struct.until.month = pq_getmsgint(buf, 4);
+    temp_struct.until.day = pq_getmsgint(buf, 4);
+    temp_struct.until.hour = pq_getmsgint(buf, 4);
+    temp_struct.until.minute = pq_getmsgint(buf, 4);
+    temp_struct.until.second = pq_getmsgint(buf, 4);
+    temp_struct.until.is_date = pq_getmsgint(buf, 4);
 
     // Receive rscale
+    char *temp_rscale = NULL;
+    size_t rscale_size = 0;
     int32 rscale_len = pq_getmsgint(buf, 4);
     if (rscale_len >= 0) {
-        recurrence->rscale = palloc(rscale_len + 1);
-        memcpy(recurrence->rscale, pq_getmsgbytes(buf, rscale_len), rscale_len);
-        recurrence->rscale[rscale_len] = '\0';
-        elog(NOTICE, "pg_rrule_recv: Received rscale: %s", recurrence->rscale);
-    } else {
-        recurrence->rscale = NULL;
-        elog(NOTICE, "pg_rrule_recv: No rscale");
+        temp_rscale = palloc(rscale_len + 1);
+        memcpy(temp_rscale, pq_getmsgbytes(buf, rscale_len), rscale_len);
+        temp_rscale[rscale_len] = '\0';
+        rscale_size = rscale_len + 1;
     }
 
-    elog(NOTICE, "pg_rrule_recv: About to receive by arrays");
+    // Receive by arrays into temporary storage
+    short *temp_arrays[ICAL_BY_NUM_PARTS];
+    size_t arrays_size = 0;
 
-    // Receive by arrays
     for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
         short size = pq_getmsgint(buf, 2);
-        elog(NOTICE, "pg_rrule_recv: by[%d] size = %d", i, size);
+        temp_struct.by[i].size = size;
 
         if (size > 0) {
-            recurrence->by[i].size = size;
-            recurrence->by[i].data = palloc(size * sizeof(short));
+            temp_arrays[i] = palloc(size * sizeof(short));
+            arrays_size += size * sizeof(short);
+
             // Receive each short individually
             for (int j = 0; j < size; j++) {
-                recurrence->by[i].data[j] = pq_getmsgint(buf, 2);
-                elog(NOTICE, "pg_rrule_recv: by[%d].data[%d] = %d", i, j, recurrence->by[i].data[j]);
+                temp_arrays[i][j] = pq_getmsgint(buf, 2);
             }
         } else {
-            recurrence->by[i].size = 0;
-            recurrence->by[i].data = NULL;
+            temp_arrays[i] = NULL;
         }
     }
 
-    elog(NOTICE, "pg_rrule_recv: Finished receiving, returning");
+    // Now create the flattened structure (same logic as pg_rrule_in)
+    size_t base_size = sizeof(struct icalrecurrencetype);
+    size_t total_size = base_size + arrays_size + rscale_size;
 
-    // Return the varlena wrapper, not the inner struct
-    PG_RETURN_POINTER(recurrence_ref);
+    // Allocate flattened structure
+    char *flattened = palloc0(VARHDRSZ + total_size);
+    SET_VARSIZE(flattened, VARHDRSZ + total_size);
+
+    // Copy base structure
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(flattened);
+    memcpy(flat_struct, &temp_struct, sizeof(struct icalrecurrencetype));
+
+    // Current position for variable data (after the base struct)
+    char *var_data_pos = VARDATA(flattened) + base_size;
+
+    // Copy and relocate by arrays
+    for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
+        if (temp_struct.by[i].size > 0 && temp_arrays[i]) {
+            size_t array_bytes = temp_struct.by[i].size * sizeof(short);
+
+            // Copy array data to our flattened buffer
+            memcpy(var_data_pos, temp_arrays[i], array_bytes);
+
+            // Store offset from start of VARDATA (not absolute pointer)
+            size_t offset = var_data_pos - VARDATA(flattened);
+            flat_struct->by[i].data = (short*)offset;
+            flat_struct->by[i].size = temp_struct.by[i].size;
+
+            var_data_pos += array_bytes;
+
+            // Free temporary array
+            pfree(temp_arrays[i]);
+        } else {
+            flat_struct->by[i].data = NULL;
+            flat_struct->by[i].size = 0;
+        }
+    }
+
+    // Copy and relocate rscale
+    if (temp_rscale) {
+        memcpy(var_data_pos, temp_rscale, rscale_size);
+        // Store as offset from start of VARDATA
+        size_t offset = var_data_pos - VARDATA(flattened);
+        flat_struct->rscale = (char*)offset;
+        var_data_pos += rscale_size;
+
+        // Free temporary rscale
+        pfree(temp_rscale);
+    } else {
+        flat_struct->rscale = NULL;
+    }
+
+    // Return the flattened varlena structure
+    PG_RETURN_POINTER(flattened);
 }
 
 /* occurrences */
