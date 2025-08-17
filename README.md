@@ -40,6 +40,7 @@ cmake \
     -DCMAKE_CXX_FLAGS="-fPIC -std=c++11" \
     -DCMAKE_C_FLAGS="-fPIC" \
     -DCMAKE_DISABLE_FIND_PACKAGE_ICU=TRUE \
+    -DLIBICAL_JAVA_BINDINGS=FALSE \
     ..
 make
 ```
