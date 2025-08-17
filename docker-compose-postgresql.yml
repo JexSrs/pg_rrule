@@ -3,14 +3,14 @@ services:
     container_name: postgresql
     hostname: postgresql
     image: 'postgres:17.2'
-    restart: 'always'
+    restart: 'unless-stopped'
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
     volumes:
       - ./data:/var/lib/postgresql/data
-      - ./pg_rrule.so:/usr/lib/postgresql/17/lib/pg_rrule.so
+      - ./build/pg_rrule.so:/usr/lib/postgresql/17/lib/pg_rrule.so
       - ./pg_rrule.control:/usr/share/postgresql/17/extension/pg_rrule.control
-      - ./pg_rrule--0.2.0.sql:/usr/share/postgresql/17/extension/pg_rrule--0.2.0.sql
+      - ./sql/pg_rrule.sql:/usr/share/postgresql/17/extension/pg_rrule--0.3.0.sql
     ports:
       - "5432:5432"

@@ -1,4 +1,3 @@
-# Use Ubuntu:22.04 for the
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -18,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     postgresql-server-dev-17 postgresql-17 libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Download ICU from sourve and build using -fPIC params
+# Download ICU from source and build using -fPIC params
 RUN cd /tmp && \
     curl -LO https://github.com/unicode-org/icu/releases/download/release-73-2/icu4c-73_2-src.tgz && \
     tar xf icu4c-73_2-src.tgz && \
