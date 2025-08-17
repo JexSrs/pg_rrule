@@ -434,4 +434,71 @@ void pg_rrule_rrule_to_time_t_array_until(struct icalrecurrencetype recurrence,
  */
 Datum pg_rrule_get_bypart_rrule(struct icalrecurrencetype *recurrence_ref, icalrecurrencetype_byrule part, size_t max_size);
 
+/**
+ * @brief Helper function to convert flattened PostgreSQL storage format to temporary struct with real pointers.
+ *
+ * This function converts the internal flattened storage format used by the PostgreSQL rrule type
+ * back into a standard icalrecurrencetype struct with real memory pointers. The flattened format
+ * stores all data in a single contiguous memory block using offsets instead of pointers to ensure
+ * compatibility with PostgreSQL's direct memory storage mechanism.
+ *
+ * @details
+ * The PostgreSQL rrule type uses a flattened storage format where:
+ * - The base icalrecurrencetype struct is stored first
+ * - All by-rule arrays (by[].data) are stored as offsets from VARDATA base address
+ * - The rscale string is stored as an offset from VARDATA base address
+ * - This prevents pointer corruption when PostgreSQL stores/loads data directly to/from disk
+ *
+ * This function reconstructs a temporary struct with real pointers by:
+ * 1. Copying the base structure fields
+ * 2. Converting stored offsets back to real memory pointers for by-rule arrays
+ * 3. Converting stored offset back to real memory pointer for rscale string
+ *
+ * @param varlena_data Pointer to the PostgreSQL varlena structure containing flattened rrule data.
+ *                     This should be obtained from PG_GETARG_POINTER() in PostgreSQL functions.
+ *                     The data layout is: [VARHDRSZ][icalrecurrencetype][by_arrays][rscale_string]
+ *
+ * @param temp_struct Pointer to a temporary icalrecurrencetype struct that will be populated
+ *                    with the converted data. This struct should be allocated on the stack
+ *                    by the caller and will contain real pointers suitable for use with
+ *                    libical functions.
+ *
+ * @note The temp_struct will contain pointers that reference memory within the original
+ *       varlena_data buffer. The caller must ensure that varlena_data remains valid
+ *       for the lifetime of temp_struct usage.
+ *
+ * @note This function does not allocate any new memory. All pointers in temp_struct
+ *       point directly into the varlena_data buffer.
+ *
+ * @warning Do not attempt to free or modify the data pointed to by temp_struct fields.
+ *          The memory is managed by PostgreSQL's memory context system.
+ *
+ * @example
+ * ```c
+ * Datum my_rrule_function(PG_FUNCTION_ARGS) {
+ *     char *varlena_data = (char*) PG_GETARG_POINTER(0);
+ *     struct icalrecurrencetype temp_struct;
+ *
+ *     // Convert flattened format to usable struct
+ *     flatten_to_temp_struct(varlena_data, &temp_struct);
+ *
+ *     // Now temp_struct can be used with libical functions
+ *     char *rrule_string = icalrecurrencetype_as_string(&temp_struct);
+ *
+ *     // ... use temp_struct as needed ...
+ *
+ *     // temp_struct automatically cleaned up when function returns
+ * }
+ * ```
+ *
+ * @see pg_rrule_in() for the function that creates the flattened format
+ * @see pg_rrule_out() for example usage of this helper function
+ * @see PostgreSQL documentation on VARIABLE length types
+ *
+ * @since This helper function is required due to the flattened storage format
+ *        implemented to solve pointer corruption issues with PostgreSQL's
+ *        direct memory storage mechanism.
+ */
+void flatten_to_temp_struct(char *varlena_data, struct icalrecurrencetype *temp_struct);
+
 #endif // PG_RRULE_H

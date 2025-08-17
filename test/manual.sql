@@ -1,12 +1,8 @@
-SELECT * FROM pg_available_extensions;
-
+-- Extension management
 DROP EXTENSION pg_rrule cascade;
-ALTER EXTENSION pg_rrule UPDATE;
 CREATE EXTENSION pg_rrule;
-
--- Test send function
-SELECT encode(rrule_send('FREQ=WEEKLY;INTERVAL=2;UNTIL=20251231T235959Z;BYDAY=MO,WE,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0'::rrule), 'hex');
-SELECT rrule_send('FREQ=WEEKLY;INTERVAL=2;UNTIL=20251231T235959Z;BYDAY=MO,WE,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0'::rrule) = '\x[OUTPUT_FROM_ABOVE]'::bytea;
+SET client_min_messages = NOTICE;
+SET log_min_messages = NOTICE;
 
 -- Simple tests
 SELECT rrule_in('FREQ=WEEKLY;INTERVAL=1;UNTIL=20251231T235959Z;BYDAY=MO,WE,FR;BYHOUR=9;BYMINUTE=0;BYSECOND=0');
@@ -58,29 +54,42 @@ SELECT 'FREQ=DAILY;INTERVAL=1;BYHOUR=12;BYMINUTE=0;BYSECOND=0'::rrule !=
 
 -- Table tests
 DROP TABLE IF EXISTS public.event;
+DROP TABLE IF EXISTS public.event2;
 CREATE TABLE public.event
 (
     "id"    SERIAL PRIMARY KEY NOT NULL,
     "rrule" rrule              NOT NULL
 );
+CREATE TABLE public.event2
+(
+    "id"    SERIAL PRIMARY KEY NOT NULL,
+    "rrule" rrule              NOT NULL
+);
 
-DELETE FROM public.event;
-SELECT t.*
-FROM public.event t
-LIMIT 501;
+INSERT INTO public.event (rrule) VALUES ('FREQ=DAILY;INTERVAL=1;BYHOUR=9;BYMINUTE=0;BYSECOND=0'::rrule);
+INSERT INTO public.event (rrule) VALUES ('FREQ=WEEKLY;BYDAY=MO,WE,FR;BYHOUR=10;BYMINUTE=0;BYSECOND=0'::rrule);
+INSERT INTO public.event (rrule) VALUES ('FREQ=MONTHLY;BYDAY=1MO;BYHOUR=11;BYMINUTE=0;BYSECOND=0'::rrule);
 
-INSERT INTO public.event (rrule)
-VALUES ('FREQ=DAILY;INTERVAL=1;BYHOUR=9;BYMINUTE=0;BYSECOND=0'::rrule);
+SELECT * FROM public.event;
 
-INSERT INTO public.event (rrule)
-VALUES ('FREQ=WEEKLY;BYDAY=MO,WE,FR;BYHOUR=10;BYMINUTE=0;BYSECOND=0'::rrule);
+-- Test send/recv
+COPY public.event TO '/tmp/test.dat' WITH BINARY;
+COPY public.event2 FROM '/tmp/test.dat' WITH BINARY;
 
-INSERT INTO public.event (rrule)
-VALUES ('FREQ=MONTHLY;BYDAY=1MO;BYHOUR=11;BYMINUTE=0;BYSECOND=0'::rrule);
+SELECT * FROM public.event2; -- should be same data as public.event
+
+-- Test functions in saved data
+SELECT *, get_byhour(event.rrule)
+FROM public.event event;
+
+SELECT *, rrule_out(event.rrule)
+FROM public.event event;
 
 SELECT *
-FROM public.event;
+FROM public.event event
+WHERE event.rrule = 'FREQ=DAILY;INTERVAL=1;BYHOUR=9;BYMINUTE=0;BYSECOND=0'::rrule;
 
+-- occurrences checks
 SELECT event.id, COUNT(*) as occurrence_count
 FROM public.event event
 CROSS JOIN LATERAL unnest(get_occurrences(
@@ -97,13 +106,3 @@ CROSS JOIN LATERAL get_occurrences(
         '2025-01-01 00:00:00+00'::timestamp with time zone,
         '2026-01-01 00:00:00+00'::timestamp with time zone
 ) as occurrences;
-
-SELECT *, get_byhour(event.rrule)
-FROM public.event event;
-
-SELECT *, rrule_out(event.rrule)
-FROM public.event event;
-
-SELECT *
-FROM public.event event
-WHERE event.rrule = 'FREQ=DAILY;INTERVAL=1;BYHOUR=9;BYMINUTE=0;BYSECOND=0'::rrule;

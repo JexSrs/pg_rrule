@@ -310,8 +310,11 @@ Datum pg_rrule_recv(PG_FUNCTION_ARGS) {
 
 /* occurrences */
 Datum pg_rrule_get_occurrences_dtstart_tz(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
     TimestampTz dtstart_ts = PG_GETARG_TIMESTAMPTZ(1);
 
     long int gmtoff = 0;
@@ -328,14 +331,16 @@ Datum pg_rrule_get_occurrences_dtstart_tz(PG_FUNCTION_ARGS) {
     pg_time_t dtstart_ts_pg_time_t = timestamptz_to_time_t(dtstart_ts);
 
     struct icaltimetype dtstart = icaltime_from_timet_with_zone((time_t) dtstart_ts_pg_time_t, 0, ical_tz);
-    // it's safe ? time_t may be double, float, etc...
 
-    return pg_rrule_get_occurrences_rrule(*recurrence_ref, dtstart, true);
+    return pg_rrule_get_occurrences_rrule(temp_struct, dtstart, true);
 }
 
 Datum pg_rrule_get_occurrences_dtstart_until_tz(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
     TimestampTz dtstart_ts = PG_GETARG_TIMESTAMPTZ(1);
     TimestampTz until_ts = PG_GETARG_TIMESTAMPTZ(2);
 
@@ -354,30 +359,32 @@ Datum pg_rrule_get_occurrences_dtstart_until_tz(PG_FUNCTION_ARGS) {
     pg_time_t until_ts_pg_time_t = timestamptz_to_time_t(until_ts);
 
     struct icaltimetype dtstart = icaltime_from_timet_with_zone((time_t) dtstart_ts_pg_time_t, 0, ical_tz);
-    // it's safe ? time_t may be double, float, etc...
     struct icaltimetype until = icaltime_from_timet_with_zone((time_t) until_ts_pg_time_t, 0, ical_tz);
-    // it's safe ? time_t may be double, float, etc...
 
-    return pg_rrule_get_occurrences_rrule_until(*recurrence_ref, dtstart, until, true);
+    return pg_rrule_get_occurrences_rrule_until(temp_struct, dtstart, until, true);
 }
 
 Datum pg_rrule_get_occurrences_dtstart(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
     Timestamp dtstart_ts = PG_GETARG_TIMESTAMP(1);
 
     pg_time_t dtstart_ts_pg_time_t = timestamptz_to_time_t(dtstart_ts);
 
     struct icaltimetype dtstart = icaltime_from_timet_with_zone((time_t) dtstart_ts_pg_time_t, 0,
                                                                 icaltimezone_get_utc_timezone());
-    // it's safe ? time_t may be double, float, etc...
 
-    return pg_rrule_get_occurrences_rrule(*recurrence_ref, dtstart, false);
+    return pg_rrule_get_occurrences_rrule(temp_struct, dtstart, false);
 }
 
 Datum pg_rrule_get_occurrences_dtstart_until(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
 
     Timestamp dtstart_ts = PG_GETARG_TIMESTAMP(1);
     Timestamp until_ts = PG_GETARG_TIMESTAMP(2);
@@ -387,90 +394,104 @@ Datum pg_rrule_get_occurrences_dtstart_until(PG_FUNCTION_ARGS) {
 
     struct icaltimetype dtstart = icaltime_from_timet_with_zone((time_t) dtstart_ts_pg_time_t, 0,
                                                                 icaltimezone_get_utc_timezone());
-    // it's safe ? time_t may be double, float, etc...
     struct icaltimetype until = icaltime_from_timet_with_zone((time_t) until_ts_pg_time_t, 0,
                                                               icaltimezone_get_utc_timezone());
-    // it's safe ? time_t may be double, float, etc...
 
-    return pg_rrule_get_occurrences_rrule_until(*recurrence_ref, dtstart, until, false);
+    return pg_rrule_get_occurrences_rrule_until(temp_struct, dtstart, until, false);
 }
 
 /* operators */
 Datum pg_rrule_eq(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data1 = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *rrule1 = (struct icalrecurrencetype*)VARDATA(varlena_data1);
+    char *varlena_data1 = (char*) PG_GETARG_POINTER(0);
+    char *varlena_data2 = (char*) PG_GETARG_POINTER(1);  // Fixed: was using arg 0 twice
 
-    struct icalrecurrencetype *varlena_data2 = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *rrule2 = (struct icalrecurrencetype*)VARDATA(varlena_data2);
+    struct icalrecurrencetype temp_struct1, temp_struct2;
+
+    // Convert both flattened structures to temporary structs with real pointers
+    flatten_to_temp_struct(varlena_data1, &temp_struct1);
+    flatten_to_temp_struct(varlena_data2, &temp_struct2);
 
     // Compare basic fields
-    if (rrule1->freq != rrule2->freq ||
-        rrule1->interval != rrule2->interval ||
-        rrule1->count != rrule2->count ||
-        rrule1->week_start != rrule2->week_start) {
+    if (temp_struct1.freq != temp_struct2.freq ||
+        temp_struct1.interval != temp_struct2.interval ||
+        temp_struct1.count != temp_struct2.count ||
+        temp_struct1.week_start != temp_struct2.week_start) {
         PG_RETURN_BOOL(false);
     }
 
     // Compare UNTIL
-    if (icaltime_compare(rrule1->until, rrule2->until) != 0) {
+    if (icaltime_compare(temp_struct1.until, temp_struct2.until) != 0) {
         PG_RETURN_BOOL(false);
     }
 
     // Compare RSCALE
-    if ((rrule1->rscale == NULL && rrule2->rscale != NULL) ||
-        (rrule1->rscale != NULL && rrule2->rscale == NULL) ||
-        (rrule1->rscale != NULL && rrule2->rscale != NULL &&
-         strcmp(rrule1->rscale, rrule2->rscale) != 0)) {
+    if ((temp_struct1.rscale == NULL && temp_struct2.rscale != NULL) ||
+        (temp_struct1.rscale != NULL && temp_struct2.rscale == NULL) ||
+        (temp_struct1.rscale != NULL && temp_struct2.rscale != NULL &&
+         strcmp(temp_struct1.rscale, temp_struct2.rscale) != 0)) {
         PG_RETURN_BOOL(false);
     }
 
     // Compare BY* arrays
     for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
         // First compare the size field
-        if (rrule1->by[i].size != rrule2->by[i].size) {
+        if (temp_struct1.by[i].size != temp_struct2.by[i].size) {
             PG_RETURN_BOOL(false);
         }
 
-        short *array1 = rrule1->by[i].data;
-        short *array2 = rrule2->by[i].data;
-
-        int max_size;
-        switch (i) {
-            case ICAL_BY_SECOND:
-                max_size = ICAL_BY_SECOND_SIZE;
-                break;
-            case ICAL_BY_MINUTE:
-                max_size = ICAL_BY_MINUTE_SIZE;
-                break;
-            case ICAL_BY_HOUR:
-                max_size = ICAL_BY_HOUR_SIZE;
-                break;
-            case ICAL_BY_DAY:
-                max_size = ICAL_BY_DAY_SIZE;
-                break;
-            case ICAL_BY_MONTH_DAY:
-                max_size = ICAL_BY_MONTHDAY_SIZE;
-                break;
-            case ICAL_BY_WEEK_NO:
-                max_size = ICAL_BY_WEEKNO_SIZE;
-                break;
-            case ICAL_BY_YEAR_DAY:
-                max_size = ICAL_BY_YEARDAY_SIZE;
-                break;
-            case ICAL_BY_MONTH:
-                max_size = ICAL_BY_MONTH_SIZE;
-                break;
-            case ICAL_BY_SET_POS:
-                max_size = ICAL_BY_SETPOS_SIZE;
-                break;
-            default:
-                continue; // Skip unknown by-rule types
+        // If both sizes are 0, continue to next array
+        if (temp_struct1.by[i].size == 0) {
+            continue;
         }
 
-        // Compare each element up to the size stored in the structure
-        for (int j = 0; j < rrule1->by[i].size && j < max_size; j++) {
-            if (array1[j] != array2[j]) {
-                PG_RETURN_BOOL(false);
+        short *array1 = temp_struct1.by[i].data;
+        short *array2 = temp_struct2.by[i].data;
+
+        // Both should have data if size > 0, but double-check
+        if ((array1 == NULL && array2 != NULL) ||
+            (array1 != NULL && array2 == NULL)) {
+            PG_RETURN_BOOL(false);
+        }
+
+        if (array1 != NULL && array2 != NULL) {
+            int max_size;
+            switch (i) {
+                case ICAL_BY_SECOND:
+                    max_size = ICAL_BY_SECOND_SIZE;
+                    break;
+                case ICAL_BY_MINUTE:
+                    max_size = ICAL_BY_MINUTE_SIZE;
+                    break;
+                case ICAL_BY_HOUR:
+                    max_size = ICAL_BY_HOUR_SIZE;
+                    break;
+                case ICAL_BY_DAY:
+                    max_size = ICAL_BY_DAY_SIZE;
+                    break;
+                case ICAL_BY_MONTH_DAY:
+                    max_size = ICAL_BY_MONTHDAY_SIZE;
+                    break;
+                case ICAL_BY_WEEK_NO:
+                    max_size = ICAL_BY_WEEKNO_SIZE;
+                    break;
+                case ICAL_BY_YEAR_DAY:
+                    max_size = ICAL_BY_YEARDAY_SIZE;
+                    break;
+                case ICAL_BY_MONTH:
+                    max_size = ICAL_BY_MONTH_SIZE;
+                    break;
+                case ICAL_BY_SET_POS:
+                    max_size = ICAL_BY_SETPOS_SIZE;
+                    break;
+                default:
+                    continue; // Skip unknown by-rule types
+            }
+
+            // Compare each element up to the size stored in the structure
+            for (int j = 0; j < temp_struct1.by[i].size && j < max_size; j++) {
+                if (array1[j] != array2[j]) {
+                    PG_RETURN_BOOL(false);
+                }
             }
         }
     }
@@ -484,41 +505,37 @@ Datum pg_rrule_ne(PG_FUNCTION_ARGS) {
     PG_RETURN_BOOL(!result);
 }
 
-/* FREQ */
+/* Other functions */
 Datum pg_rrule_get_freq_rrule(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(varlena_data);
 
-    if (recurrence_ref->freq == ICAL_NO_RECURRENCE) {
+    if (flat_struct->freq == ICAL_NO_RECURRENCE) {
         PG_RETURN_NULL();
     }
 
-    const char *const freq_string = icalrecur_freq_to_string(recurrence_ref->freq);
-
+    const char *const freq_string = icalrecur_freq_to_string(flat_struct->freq);
     PG_RETURN_TEXT_P(cstring_to_text(freq_string));
 }
 
-/* UNTIL */
 Datum pg_rrule_get_until_rrule(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(varlena_data);
 
-    if (icaltime_is_null_time(recurrence_ref->until)) {
+    if (icaltime_is_null_time(flat_struct->until)) {
         PG_RETURN_NULL();
     }
 
     pg_time_t until_pg_time_t = (pg_time_t) icaltime_as_timet_with_zone(
-        recurrence_ref->until, icaltimezone_get_utc_timezone()); // it's safe ? time_t may be double, float, etc...
-
+        flat_struct->until, icaltimezone_get_utc_timezone());
     PG_RETURN_TIMESTAMP(time_t_to_timestamptz(until_pg_time_t));
 }
 
-/* UNTIL TZ */
 Datum pg_rrule_get_untiltz_rrule(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(varlena_data);
 
-    if (icaltime_is_null_time(recurrence_ref->until)) {
+    if (icaltime_is_null_time(flat_struct->until)) {
         PG_RETURN_NULL();
     }
 
@@ -527,133 +544,141 @@ Datum pg_rrule_get_untiltz_rrule(PG_FUNCTION_ARGS) {
     if (pg_get_timezone_offset(session_timezone, &gmtoff)) {
         ical_tz = icaltimezone_get_builtin_timezone_from_offset(gmtoff, pg_get_timezone_name(session_timezone));
     }
-
     if (ical_tz == NULL) {
         elog(WARNING, "Can't get timezone from current session! Fallback to UTC.");
         ical_tz = icaltimezone_get_utc_timezone();
     }
 
-    pg_time_t until_pg_time_t = (pg_time_t) icaltime_as_timet_with_zone(recurrence_ref->until, ical_tz);
-    // it's safe ? time_t may be double, float, etc...
-
+    pg_time_t until_pg_time_t = (pg_time_t) icaltime_as_timet_with_zone(flat_struct->until, ical_tz);
     PG_RETURN_TIMESTAMP(time_t_to_timestamptz(until_pg_time_t));
 }
 
-/* COUNT */
 Datum pg_rrule_get_count_rrule(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-    PG_RETURN_INT32(recurrence_ref->count);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(varlena_data);
+
+    PG_RETURN_INT32(flat_struct->count);
 }
 
-/* INTERVAL */
 Datum pg_rrule_get_interval_rrule(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-    PG_RETURN_INT16(recurrence_ref->interval);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(varlena_data);
+
+    PG_RETURN_INT16(flat_struct->interval);
 }
 
-/* BYSECOND */
-Datum pg_rrule_get_bysecond_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_SECOND, ICAL_BY_SECOND_SIZE);
-}
-
-/* BYMINUTE */
-Datum pg_rrule_get_byminute_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_MINUTE, ICAL_BY_MINUTE_SIZE);
-}
-
-/* BYHOUR */
-Datum pg_rrule_get_byhour_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_HOUR, ICAL_BY_HOUR_SIZE);
-}
-
-/* BYDAY */
-Datum pg_rrule_get_byday_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_DAY, ICAL_BY_DAY_SIZE);
-}
-
-/* BYMONTHDAY */
-Datum pg_rrule_get_bymonthday_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_MONTH_DAY, ICAL_BY_MONTHDAY_SIZE);
-}
-
-/* BYYEARDAY */
-Datum pg_rrule_get_byyearday_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_YEAR_DAY, ICAL_BY_YEARDAY_SIZE);
-}
-
-/* BYWEEKNO */
-Datum pg_rrule_get_byweekno_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_WEEK_NO, ICAL_BY_WEEKNO_SIZE);
-}
-
-/* BYMONTH */
-Datum pg_rrule_get_bymonth_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_MONTH, ICAL_BY_MONTH_SIZE);
-}
-
-/* BYSETPOS */
-Datum pg_rrule_get_bysetpos_rrule(PG_FUNCTION_ARGS) {
-    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
-
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
-
-    return pg_rrule_get_bypart_rrule(recurrence_ref, ICAL_BY_SET_POS, ICAL_BY_SETPOS_SIZE);
-}
-
-/* WKST */
 Datum pg_rrule_get_wkst_rrule(PG_FUNCTION_ARGS) {
-    struct icalrecurrencetype *varlena_data = (struct icalrecurrencetype *) PG_GETARG_POINTER(0);
-    struct icalrecurrencetype *recurrence_ref = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(varlena_data);
 
-    if (recurrence_ref->week_start == ICAL_NO_WEEKDAY) {
+    if (flat_struct->week_start == ICAL_NO_WEEKDAY) {
         PG_RETURN_NULL();
     }
 
-    const char *const wkst_string = icalrecur_weekday_to_string(recurrence_ref->week_start);
-
+    const char *const wkst_string = icalrecur_weekday_to_string(flat_struct->week_start);
     PG_RETURN_TEXT_P(cstring_to_text(wkst_string));
 }
 
+Datum pg_rrule_get_bysecond_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_SECOND, ICAL_BY_SECOND_SIZE);
+}
+
+Datum pg_rrule_get_byminute_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_MINUTE, ICAL_BY_MINUTE_SIZE);
+}
+
+Datum pg_rrule_get_byhour_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_HOUR, ICAL_BY_HOUR_SIZE);
+}
+
+Datum pg_rrule_get_byday_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_DAY, ICAL_BY_DAY_SIZE);
+}
+
+Datum pg_rrule_get_bymonthday_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_MONTH_DAY, ICAL_BY_MONTHDAY_SIZE);
+}
+
+Datum pg_rrule_get_byyearday_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_YEAR_DAY, ICAL_BY_YEARDAY_SIZE);
+}
+
+Datum pg_rrule_get_byweekno_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_WEEK_NO, ICAL_BY_WEEKNO_SIZE);
+}
+
+Datum pg_rrule_get_bymonth_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_MONTH, ICAL_BY_MONTH_SIZE);
+}
+
+Datum pg_rrule_get_bysetpos_rrule(PG_FUNCTION_ARGS) {
+    if (PG_ARGISNULL(0)) PG_RETURN_NULL();
+
+    char *varlena_data = (char*) PG_GETARG_POINTER(0);
+    struct icalrecurrencetype temp_struct;
+
+    flatten_to_temp_struct(varlena_data, &temp_struct);
+
+    return pg_rrule_get_bypart_rrule(&temp_struct, ICAL_BY_SET_POS, ICAL_BY_SETPOS_SIZE);
+}
+
+/* Helpers */
 Datum pg_rrule_get_occurrences_rrule(struct icalrecurrencetype recurrence, struct icaltimetype dtstart, bool use_tz) {
     return pg_rrule_get_occurrences_rrule_until(recurrence, dtstart, icaltime_null_time(), use_tz);
 }
@@ -796,4 +821,30 @@ Datum pg_rrule_get_bypart_rrule(struct icalrecurrencetype *recurrence_ref, icalr
     );
 
     PG_RETURN_ARRAYTYPE_P(result_array);
+}
+
+void flatten_to_temp_struct(char *varlena_data, struct icalrecurrencetype *temp_struct) {
+    struct icalrecurrencetype *flat_struct = (struct icalrecurrencetype*)VARDATA(varlena_data);
+    char *base_addr = VARDATA(varlena_data);
+
+    // Copy the base structure
+    memcpy(temp_struct, flat_struct, sizeof(struct icalrecurrencetype));
+
+    // Convert offsets back to real pointers for by arrays
+    for (int i = 0; i < ICAL_BY_NUM_PARTS; i++) {
+        if (flat_struct->by[i].size > 0 && flat_struct->by[i].data != NULL) {
+            size_t offset = (size_t)flat_struct->by[i].data;
+            temp_struct->by[i].data = (short*)(base_addr + offset);
+        } else {
+            temp_struct->by[i].data = NULL;
+        }
+    }
+
+    // Convert rscale offset back to pointer
+    if (flat_struct->rscale != NULL) {
+        size_t offset = (size_t)flat_struct->rscale;
+        temp_struct->rscale = base_addr + offset;
+    } else {
+        temp_struct->rscale = NULL;
+    }
 }
