@@ -458,36 +458,36 @@ Datum pg_rrule_get_bypart(struct icalrecurrencetype *recurrence_ref, icalrecurre
  *                     This should be obtained from PG_GETARG_POINTER() in PostgreSQL functions.
  *                     The data layout is: [VARHDRSZ][icalrecurrencetype][by_arrays][rscale_string]
  *
- * @param temp_struct Pointer to a temporary icalrecurrencetype struct that will be populated
+ * @param tmp Pointer to a temporary icalrecurrencetype struct that will be populated
  *                    with the converted data. This struct should be allocated on the stack
  *                    by the caller and will contain real pointers suitable for use with
  *                    libical functions.
  *
- * @note The temp_struct will contain pointers that reference memory within the original
+ * @note The tmp will contain pointers that reference memory within the original
  *       varlena_data buffer. The caller must ensure that varlena_data remains valid
- *       for the lifetime of temp_struct usage.
+ *       for the lifetime of tmp usage.
  *
- * @note This function does not allocate any new memory. All pointers in temp_struct
+ * @note This function does not allocate any new memory. All pointers in tmp
  *       point directly into the varlena_data buffer.
  *
- * @warning Do not attempt to free or modify the data pointed to by temp_struct fields.
+ * @warning Do not attempt to free or modify the data pointed to by tmp fields.
  *          The memory is managed by PostgreSQL's memory context system.
  *
  * @example
  * ```c
  * Datum my_rrule_function(PG_FUNCTION_ARGS) {
  *     char *varlena_data = (char*) PG_GETARG_POINTER(0);
- *     struct icalrecurrencetype temp_struct;
+ *     struct icalrecurrencetype tmp;
  *
  *     // Convert flattened format to usable struct
- *     flatten_to_temp_struct(varlena_data, &temp_struct);
+ *     flatten_to_tmp(varlena_data, &tmp);
  *
- *     // Now temp_struct can be used with libical functions
- *     char *rrule_string = icalrecurrencetype_as_string(&temp_struct);
+ *     // Now tmp can be used with libical functions
+ *     char *rrule_string = icalrecurrencetype_as_string(&tmp);
  *
- *     // ... use temp_struct as needed ...
+ *     // ... use tmp as needed ...
  *
- *     // temp_struct automatically cleaned up when function returns
+ *     // tmp automatically cleaned up when function returns
  * }
  * ```
  *
@@ -499,6 +499,6 @@ Datum pg_rrule_get_bypart(struct icalrecurrencetype *recurrence_ref, icalrecurre
  *        implemented to solve pointer corruption issues with PostgreSQL's
  *        direct memory storage mechanism.
  */
-void flatten_to_temp_struct(char *varlena_data, struct icalrecurrencetype *temp_struct);
+void flatten_to_tmp(char *varlena_data, struct icalrecurrencetype *tmp);
 
 #endif // PG_RRULE_H

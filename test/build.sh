@@ -13,7 +13,7 @@ cmake \
     -DCMAKE_DISABLE_FIND_PACKAGE_ICU=TRUE \
     -DLIBICAL_JAVA_BINDINGS=FALSE \
     .. && \
-make && /
+make && \
 cd /app && \
 rm -rf build && \
 mkdir build && \
